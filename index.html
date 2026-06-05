@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salud — Mi Historial</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Courier New', monospace; background: #080c18; color: #e0e4f0; min-height: 100vh; }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #080c18; } ::-webkit-scrollbar-thumb { background: #1e2a4a; border-radius: 2px; }
+header { border-bottom: 1px solid #131d35; padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #080c18; z-index: 50; }
+.logo { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; color: #fff; }
+.logo span { color: #38bdf8; }
+.logo-sub { font-size: 9px; color: #334455; letter-spacing: 3px; margin-top: 1px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.sync-status { font-size: 9px; letter-spacing: 1px; padding: 3px 8px; border-radius: 100px; }
+.sync-ok { color: #22c55e; border: 1px solid #166534; }
+.sync-err { color: #ef4444; border: 1px solid #7f1d1d; }
+.sync-loading { color: #f59e0b; border: 1px solid #78350f; }
+.btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 1px; font-weight: 700; transition: all 0.15s; }
+.btn-primary { background: #38bdf8; color: #080c18; }
+.btn-primary:hover { background: #7dd3fc; }
+.btn-ghost { background: transparent; border: 1px solid #1e2a4a; color: #7a8aaa; }
+.btn-ghost:hover { border-color: #38bdf8; color: #38bdf8; }
+.btn-danger { background: transparent; border: none; color: #2a3a5a; font-size: 12px; cursor: pointer; padding: 2px 6px; }
+.btn-danger:hover { color: #ef4444; }
+main { max-width: 1100px; margin: 0 auto; padding: 20px 28px; }
+.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+.stat { background: #0c1220; border: 1px solid #131d35; border-radius: 8px; padding: 12px 16px; }
+.stat-label { font-size: 8px; color: #334455; letter-spacing: 2px; margin-bottom: 4px; }
+.stat-value { font-size: 26px; font-weight: 900; }
+.tabs { display: flex; margin-bottom: 16px; border-bottom: 1px solid #131d35; }
+.tab { padding: 8px 16px; font-size: 10px; letter-spacing: 1px; cursor: pointer; border: none; background: transparent; color: #5a6a8a; font-family: 'Courier New', monospace; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+.tab.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+.filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.divider { width: 1px; height: 18px; background: #131d35; margin: 0 2px; }
+.pill { cursor: pointer; border: 1px solid #1e2a4a; padding: 3px 10px; border-radius: 100px; font-size: 10px; font-family: 'Courier New', monospace; background: transparent; color: #5a6a8a; transition: all 0.12s; }
+.pill:hover { border-color: #38bdf8; color: #38bdf8; }
+.pill.active { background: #38bdf8; color: #080c18; border-color: #38bdf8; font-weight: 700; }
+.table-wrap { background: #0c1220; border: 1px solid #131d35; border-radius: 8px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th { padding: 9px 12px; text-align: left; font-size: 8px; color: #2a3a5a; letter-spacing: 1.5px; border-bottom: 1px solid #131d35; font-weight: 700; }
+td { padding: 10px 12px; border-bottom: 1px solid #0d1728; vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #0a1020; }
+.empty { text-align: center; padding: 50px; color: #2a3a5a; font-size: 12px; }
+.badge { display: inline-block; font-size: 8px; padding: 2px 7px; border-radius: 100px; border: 1px solid; letter-spacing: 1px; font-weight: 700; }
+.badge-normal,.badge-negativo { color: #22c55e; border-color: #166534; }
+.badge-alto,.badge-alterado { color: #ef4444; border-color: #7f1d1d; }
+.badge-bajo { color: #f59e0b; border-color: #78350f; }
+.badge-control { color: #94a3b8; border-color: #334155; }
+.badge-indet { color: #64748b; border-color: #1e293b; }
+.type-lab { color: #38bdf8; font-size: 8px; letter-spacing: 1px; }
+.type-inf { color: #a78bfa; font-size: 8px; letter-spacing: 1px; }
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; }
+.modal-bg.open { display: flex; }
+.modal { background: #0c1220; border: 1px solid #1e2a4a; border-radius: 10px; width: 92%; max-width: 660px; max-height: 90vh; overflow-y: auto; padding: 24px; }
+.modal h2 { font-size: 11px; color: #38bdf8; margin-bottom: 18px; letter-spacing: 2px; }
+.type-select { display: flex; gap: 8px; margin-bottom: 18px; }
+.type-btn { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #1e2a4a; background: transparent; color: #5a6a8a; font-family: 'Courier New', monospace; font-size: 11px; cursor: pointer; transition: all 0.15s; letter-spacing: 1px; }
+.type-btn.active { border-color: #38bdf8; color: #38bdf8; background: #0a1828; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.full { grid-column: 1 / -1; }
+label { font-size: 9px; color: #4a5a7a; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+input, select, textarea { width: 100%; background: #080c18; border: 1px solid #1e2a4a; border-radius: 6px; padding: 8px 10px; color: #e0e4f0; font-family: 'Courier New', monospace; font-size: 11px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: #38bdf8; }
+textarea { resize: vertical; min-height: 70px; }
+.btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.tl-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; background: #0c1220; border: 1px solid #131d35; border-radius: 6px; cursor: pointer; transition: all 0.12s; margin-bottom:6px; }
+.tl-item:hover { border-color: #38bdf8; }
+.tl-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+.tl-year { font-size: 9px; color: #2a3a5a; letter-spacing: 2px; padding: 6px 0 2px; border-top: 1px solid #131d35; margin-top: 4px; }
+.loading-overlay { position:fixed;inset:0;background:#080c18;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px; }
+.spinner { width:28px;height:28px;border:2px solid #1e2a4a;border-top-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text { font-size:10px;color:#4a5a7a;letter-spacing:2px; }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">CONECTANDO...</div>
+</div>
+
+<header>
+  <div>
+    <div class="logo">SALUD<span>_</span></div>
+    <div class="logo-sub">HISTORIAL MÉDICO PERSONAL</div>
+  </div>
+  <div class="header-actions">
+    <span class="sync-status sync-loading" id="syncStatus">⟳ CARGANDO</span>
+    <button class="btn btn-ghost" onclick="document.getElementById('fileInput').click()">↑ PDF</button>
+    <button class="btn btn-primary" onclick="abrirModal()">+ AGREGAR</button>
+  </div>
+</header>
+
+<input type="file" id="fileInput" accept=".pdf" style="display:none" onchange="onFileSelect(event)">
+
+<main>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">TOTAL</div><div class="stat-value" id="sTotal" style="color:#38bdf8">—</div></div>
+    <div class="stat"><div class="stat-label">ALTERADOS</div><div class="stat-value" id="sAlter" style="color:#ef4444">—</div></div>
+    <div class="stat"><div class="stat-label">CLÍNICAS</div><div class="stat-value" id="sClin" style="color:#a78bfa">—</div></div>
+    <div class="stat"><div class="stat-label">ÚLTIMO</div><div class="stat-value" id="sUlt" style="color:#22c55e;font-size:13px;padding-top:6px">—</div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('lista',this)">LISTA</button>
+    <button class="tab" onclick="setTab('timeline',this)">LÍNEA DE TIEMPO</button>
+  </div>
+  <div class="filter-bar" id="filterBar">
+    <button class="pill active" onclick="setFCat('Todos',this)">TODOS</button>
+    <button class="pill" onclick="setFCat('Neurología',this)">NEUROLOGÍA</button>
+    <button class="pill" onclick="setFCat('Imagenología',this)">IMAGENOLOGÍA</button>
+    <button class="pill" onclick="setFCat('ORL',this)">ORL</button>
+    <button class="pill" onclick="setFCat('Cardiología',this)">CARDIOLOGÍA</button>
+    <button class="pill" onclick="setFCat('Hematología',this)">HEMATOLOGÍA</button>
+    <button class="pill" onclick="setFCat('Infectología',this)">INFECTOLOGÍA</button>
+    <button class="pill" onclick="setFCat('Otro',this)">OTRO</button>
+    <div class="divider"></div>
+    <button class="pill active" onclick="setFCli('Todas',this)">TODAS</button>
+    <button class="pill" onclick="setFCli('U. de los Andes',this)">U. ANDES</button>
+    <button class="pill" onclick="setFCli('Meds',this)">MEDS</button>
+    <button class="pill" onclick="setFCli('Alemana',this)">ALEMANA</button>
+    <button class="pill" onclick="setFCli('UC Christus',this)">UC CHRISTUS</button>
+  </div>
+  <div id="viewLista">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>TIPO</th><th>EXAMEN</th><th>RESULTADO</th><th>ESTADO</th><th>CATEGORÍA</th><th>CLÍNICA</th><th>MÉDICO</th><th>FECHA</th><th></th></tr></thead>
+        <tbody id="tablaBody"><tr><td colspan="9" class="empty">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="viewTimeline" style="display:none"><div id="timelineBody"></div></div>
+</main>
+
+<div class="modal-bg" id="detailBg" onclick="if(event.target===this)cerrarDetalle()">
+  <div class="modal" id="detailContent"></div>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <h2>NUEVO EXAMEN</h2>
+    <div class="type-select">
+      <button class="type-btn active" id="btnLab" onclick="setTipo('lab')">🔬 LABORATORIO</button>
+      <button class="type-btn" id="btnInf" onclick="setTipo('inf')">📄 INFORME</button>
+    </div>
+    <div class="form-grid">
+      <div class="full"><label>NOMBRE</label><input id="fNombre" type="text" placeholder="Ej: Hemograma"></div>
+      <div><label>CATEGORÍA</label><select id="fCategoria"><option>Neurología</option><option>Imagenología</option><option>ORL</option><option>Cardiología</option><option>Hematología</option><option>Infectología</option><option>Otro</option></select></div>
+      <div><label>CLÍNICA</label><select id="fClinica"><option>U. de los Andes</option><option>Meds</option><option>Alemana</option><option>UC Christus</option><option>Las Condes</option><option>Otra</option></select></div>
+      <div><label>MÉDICO</label><input id="fMedico" type="text" placeholder="Dr. Nombre Apellido"></div>
+      <div><label>FECHA</label><input id="fFecha" type="date"></div>
+      <div id="labFields" style="display:contents">
+        <div><label>VALOR</label><input id="fValor" type="text" placeholder="14.3"></div>
+        <div><label>UNIDAD</label><input id="fUnidad" type="text" placeholder="g/dL"></div>
+        <div><label>REF. MÍN</label><input id="fRefMin" type="number" placeholder="13.5"></div>
+        <div><label>REF. MÁX</label><input id="fRefMax" type="number" placeholder="17.5"></div>
+        <div class="full"><label>ESTADO</label><select id="fEstado"><option value="normal">Normal</option><option value="alto">Alto</option><option value="bajo">Bajo</option><option value="negativo">Negativo</option><option value="no reactivo">No reactivo</option><option value="indeterminado">Indeterminado</option></select></div>
+      </div>
+      <div id="infFields" style="display:none" class="full">
+        <div style="margin-bottom:10px"><label>HALLAZGOS</label><textarea id="fHallazgos" placeholder="Hallazgos..."></textarea></div>
+        <div style="margin-bottom:10px"><label>IMPRESIÓN</label><textarea id="fImpresion" placeholder="Conclusión..."></textarea></div>
+        <div><label>RESULTADO</label><select id="fResultado"><option value="normal">Normal</option><option value="alterado">Alterado</option><option value="en control">En control</option></select></div>
+      </div>
+      <div class="full"><label>NOTAS</label><input id="fNotas" type="text" placeholder="Contexto adicional..."></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="cerrarModal()">CANCELAR</button>
+      <button class="btn btn-primary" id="btnGuardar" onclick="guardar()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── SUPABASE INIT ────────────────────────────────────────────────
+const { createClient } = supabase;
+const sb = createClient(
+  'https://jaalqnhekhcaqotgytzd.supabase.co',
+  'sb_publishable_pDsjtht8LaPnPYfylLD9Vw_H7vbYdDA'
+);
+
+const INICIALES = [
+  {tipo:'inf',nombre:'TC Cavidades Perinasales',categoria:'ORL',clinica:'U. de los Andes',medico:'Dr. Francisco Chiang Odeh',fecha:'2024-06-05',hallazgos:'Senos maxilares con engrosamiento mucoso y secreciones agudas al interior del seno maxilar izquierdo. Tabique nasal desviado de convexidad izquierda.',impresion:'Sinusitis aguda maxilar izquierda. Desviación del tabique nasal.',resultado:'alterado',valor:null,unidad:null,ref_min:null,ref_max:null,estado:null,notas:''},
+  {tipo:'inf',nombre:'EMG + NCS Extremidades Superiores',categoria:'Neurología',clinica:'Meds',medico:'Dr. Francisco Soto',fecha:'2024-06-26',hallazgos:'Compromiso neuropático de músculos bíceps, extensor de carpo, flexor pollicis longus, primer dorsal interóseo y abductor pollicis brevis izquierdos.',impresion:'Compromiso de plexo braquial izquierdo cuerdas lateral, posterior y media. Con menor posibilidad radicular cervical C6 y C8-T1 izquierdos.',resultado:'alterado',valor:null,unidad:null,ref_min:null,ref_max:null,estado:null,notas:'Derivado por Dr. Patricio Melero.'},
+  {tipo:'inf',nombre:'Electrocardiograma de Reposo',categoria:'Cardiología',clinica:'Meds',medico:'Dra. Sandra Pintos T.',fecha:'2025-08-14',hallazgos:'Ritmo sinusal 50 lpm. Onda P normal. PR 160ms. QRS 92ms.',impresion:'Bradicardia sinusal. Complejos normales.',resultado:'en control',valor:null,unidad:null,ref_min:null,ref_max:null,estado:null,notas:''},
+  {tipo:'lab',nombre:'RPR (Sífilis)',categoria:'Infectología',clinica:'Meds',medico:'TM Claudia Álvarez H.',fecha:'2026-01-29',valor:'No reactivo',unidad:'',ref_min:null,ref_max:null,estado:'no reactivo',hallazgos:null,impresion:null,resultado:null,notas:'Solicitado por Dr. Avello.'},
+  {tipo:'lab',nombre:'Hepatitis B — Antígeno de superficie',categoria:'Infectología',clinica:'Meds',medico:'TM Karl Mir Morales',fecha:'2026-01-29',valor:'Negativo',unidad:'',ref_min:null,ref_max:null,estado:'negativo',hallazgos:null,impresion:null,resultado:null,notas:''},
+  {tipo:'lab',nombre:'Hepatitis C — Anticuerpos',categoria:'Infectología',clinica:'Meds',medico:'TM Karl Mir Morales',fecha:'2026-01-29',valor:'Negativo',unidad:'',ref_min:null,ref_max:null,estado:'negativo',hallazgos:null,impresion:null,resultado:null,notas:''},
+  {tipo:'inf',nombre:'TC Cavidades Paranasales',categoria:'ORL',clinica:'UC Christus',medico:'Dr. Diego Araneda Castiglioni',fecha:'2026-01-21',hallazgos:'Senos maxilares con engrosamiento mucoso y secreciones. Incurvación del septo nasal de convexidad derecha.',impresion:'Cambios inflamatorios sinusales maxilares.',resultado:'alterado',valor:null,unidad:null,ref_min:null,ref_max:null,estado:null,notas:'Previo a septoplastía marzo 2026.'},
+  {tipo:'inf',nombre:'Ecotomografía Doppler Arterial EESS',categoria:'Neurología',clinica:'U. de los Andes',medico:'Dr. Pablo Villanueva Aravena',fecha:'2026-04-01',hallazgos:'Arterias permeables. Sin placas ateromatosas. Velocidades de flujo normales. Sin evidencias de compresión con maniobra de Adson.',impresion:'Examen dentro de rangos normales.',resultado:'normal',valor:null,unidad:null,ref_min:null,ref_max:null,estado:null,notas:'Antecedente: síndrome de opérculo torácico.'},
+  {tipo:'inf',nombre:'RM Columna Cervical (sin contraste)',categoria:'Imagenología',clinica:'U. de los Andes',medico:'Dr. Dan Dardik',fecha:'2026-04-22',hallazgos:'Cambios degenerativos C3-C4 y C5-C6. Protrusión disco-osteofítica posterolateral-foraminal izquierda C5-C6 con moderada estenosis foraminal y posible compresión raíz C6.',impresion:'Posible escoliosis. Protrusión C5-C6 izquierda con posible compresión raíz C6. Cambios inflamatorios facetarios C3-C6.',resultado:'alterado',valor:null,unidad:null,ref_min:null,ref_max:null,estado:null,notas:''},
+  {tipo:'inf',nombre:'EMG Extremidades Superiores (bilateral)',categoria:'Neurología',clinica:'U. de los Andes',medico:'Dra. Olga Reyes',fecha:'2026-04-22',hallazgos:'Conducción sensitiva y motora dentro de límites normales. Amplitud limítrofe en nervio cubital izquierdo.',impresion:'Estudio neurofisiológico de extremidades superiores dentro de límites normales.',resultado:'normal',valor:null,unidad:null,ref_min:null,ref_max:null,estado:null,notas:'Segunda EMG — contraste con estudio Meds 2024.'},
+  {tipo:'inf',nombre:'RM Cerebro',categoria:'Imagenología',clinica:'Alemana',medico:'Dr. Patricio Paredes Manzo',fecha:'2026-05-13',hallazgos:'Pequeña lesión cerebelosa derecha sin variación respecto a RM 2023. Mide aprox 6mm. Sin realce.',impresion:'Control de pequeña lesión cerebelosa derecha, probablemente glial de bajo grado, sin variación significativa respecto a RM 2023.',resultado:'en control',valor:null,unidad:null,ref_min:null,ref_max:null,estado:null,notas:'Control Dr. Hoppe Wiegering.'},
+  {tipo:'lab',nombre:'Hemograma + VHS + Coagulación',categoria:'Hematología',clinica:'UC Christus',medico:'Dra. Ana María Guzmán D.',fecha:'2026-03-03',valor:'Ver detalle',unidad:'',ref_min:null,ref_max:null,estado:'bajo',hallazgos:null,impresion:null,resultado:null,notas:'Leucocitos 4.0↓ (ref 4.5-11.0). Eosinófilos 1.2%↓. Hemoglobina 14.3 normal. Plaquetas 202 normales. VHS 2 normal.'},
+];
+
+const CAT_COLORS = {Neurología:'#38bdf8',Imagenología:'#a78bfa',ORL:'#fb923c',Cardiología:'#f43f5e',Hematología:'#ef4444',Infectología:'#22c55e',Otro:'#64748b'};
+let examenes=[], filtCat='Todos', filtCli='Todas', activeTab='lista', tipoActual='lab';
+
+function setSyncStatus(s){
+  const el=document.getElementById('syncStatus');
+  if(s==='ok'){el.className='sync-status sync-ok';el.textContent='✓ SINCRONIZADO';}
+  if(s==='err'){el.className='sync-status sync-err';el.textContent='✗ ERROR';}
+  if(s==='loading'){el.className='sync-status sync-loading';el.textContent='⟳ CARGANDO';}
+}
+
+async function cargar(){
+  setSyncStatus('loading');
+  try {
+    const {data,error} = await sb.from('examenes').select('*').order('fecha',{ascending:false});
+    if(error) throw error;
+    if(data.length===0){
+      const {error:e2} = await sb.from('examenes').insert(INICIALES);
+      if(e2) throw e2;
+      const {data:d2} = await sb.from('examenes').select('*').order('fecha',{ascending:false});
+      examenes = d2||[];
+    } else {
+      examenes = data;
+    }
+    setSyncStatus('ok');
+  } catch(e){
+    console.error(e);
+    setSyncStatus('err');
+  }
+  document.getElementById('overlay').style.display='none';
+  render();
+}
+
+async function insertar(ex){
+  setSyncStatus('loading');
+  const {data,error} = await sb.from('examenes').insert([ex]).select();
+  if(error){setSyncStatus('err');alert('Error: '+error.message);return;}
+  examenes.unshift(data[0]);
+  setSyncStatus('ok');
+}
+
+async function borrar(id){
+  setSyncStatus('loading');
+  const {error} = await sb.from('examenes').delete().eq('id',id);
+  if(!error){examenes=examenes.filter(e=>e.id!==id);setSyncStatus('ok');}
+  else setSyncStatus('err');
+}
+
+function badge(v){
+  v=(v||'').toLowerCase().replace(/\s/g,'');
+  if(v==='normal')return'<span class="badge badge-normal">NORMAL</span>';
+  if(v==='alto')return'<span class="badge badge-alto">ALTO</span>';
+  if(v==='bajo')return'<span class="badge badge-bajo">BAJO</span>';
+  if(v==='negativo'||v==='noreactivo')return'<span class="badge badge-negativo">'+v.toUpperCase()+'</span>';
+  if(v==='alterado'||v==='reactivo')return'<span class="badge badge-alterado">ALTERADO</span>';
+  if(v==='encontrol')return'<span class="badge badge-control">EN CONTROL</span>';
+  return'<span class="badge badge-indet">—</span>';
+}
+
+function fmt(f){return f?f.split('-').reverse().join('/'):'—';}
+
+function getFiltered(){return examenes.filter(e=>(filtCat==='Todos'||e.categoria===filtCat)&&(filtCli==='Todas'||e.clinica===filtCli));}
+
+function render(){
+  const total=examenes.length;
+  const alter=examenes.filter(e=>['alterado','alto','bajo','reactivo'].includes((e.estado||e.resultado||'').toLowerCase())).length;
+  const clins=new Set(examenes.map(e=>e.clinica)).size;
+  document.getElementById('sTotal').textContent=total;
+  document.getElementById('sAlter').textContent=alter;
+  document.getElementById('sClin').textContent=clins;
+  document.getElementById('sUlt').textContent=examenes[0]?.fecha?fmt(examenes[0].fecha):'—';
+  if(activeTab==='lista')renderLista();else renderTimeline();
+}
+
+function renderLista(){
+  const data=getFiltered();
+  const body=document.getElementById('tablaBody');
+  if(!data.length){body.innerHTML='<tr><td colspan="9" class="empty">Sin exámenes</td></tr>';return;}
+  body.innerHTML=data.map(ex=>{
+    const color=CAT_COLORS[ex.categoria]||'#64748b';
+    const tipo=ex.tipo==='lab'?'<span class="type-lab">LAB</span>':'<span class="type-inf">INFORME</span>';
+    const res=ex.tipo==='lab'?`${ex.valor||''} <span style="color:#334455;font-size:9px">${ex.unidad||''}</span>`:(ex.impresion||'').slice(0,70)+'…';
+    const est=badge(ex.tipo==='lab'?ex.estado:ex.resultado);
+    return`<tr onclick="verDetalle(${ex.id})" style="cursor:pointer">
+      <td>${tipo}</td><td style="color:#c8d4e8;font-weight:600;max-width:150px">${ex.nombre}</td>
+      <td style="color:#7a8aaa;font-size:10px;max-width:200px">${res}</td><td>${est}</td>
+      <td><span style="color:${color};font-size:9px">${ex.categoria}</span></td>
+      <td style="color:#4a5a7a;font-size:10px">${ex.clinica}</td>
+      <td style="color:#334455;font-size:9px">${ex.medico||'—'}</td>
+      <td style="color:#4a5a7a;font-size:10px;white-space:nowrap">${fmt(ex.fecha)}</td>
+      <td><button class="btn-danger" onclick="event.stopPropagation();eliminar(${ex.id})">×</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTimeline(){
+  const data=[...examenes].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const body=document.getElementById('timelineBody');
+  let html='',lastYear='';
+  data.forEach(ex=>{
+    const year=(ex.fecha||'????').slice(0,4);
+    if(year!==lastYear){html+=`<div class="tl-year">${year}</div>`;lastYear=year;}
+    const color=CAT_COLORS[ex.categoria]||'#64748b';
+    const est=badge(ex.tipo==='lab'?ex.estado:ex.resultado);
+    const res=ex.tipo==='lab'?`${ex.valor} ${ex.unidad||''}`:(ex.impresion||'').slice(0,80)+'…';
+    html+=`<div class="tl-item" onclick="verDetalle(${ex.id})">
+      <div class="tl-dot" style="background:${color}"></div>
+      <div style="flex:1">
+        <div style="font-size:11px;color:#c8d4e8;font-weight:600">${ex.nombre}</div>
+        <div style="font-size:10px;color:#4a5a7a;margin-top:2px">${ex.clinica} · ${fmt(ex.fecha)} · ${ex.medico||''}</div>
+        <div style="margin-top:4px">${est} <span style="color:#4a5a7a;font-size:10px;margin-left:6px">${res}</span></div>
+      </div>
+    </div>`;
+  });
+  body.innerHTML=html||'<div class="empty">Sin exámenes</div>';
+}
+
+function verDetalle(id){
+  const ex=examenes.find(e=>e.id===id);if(!ex)return;
+  const color=CAT_COLORS[ex.categoria]||'#64748b';
+  const est=badge(ex.tipo==='lab'?ex.estado:ex.resultado);
+  let html=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+    <div><div style="font-size:15px;color:#fff;font-weight:700;margin-bottom:4px">${ex.nombre}</div>
+    <div style="font-size:10px;color:#4a5a7a">${ex.clinica} · ${fmt(ex.fecha)}</div>
+    <div style="font-size:10px;color:#334455;margin-top:2px">${ex.medico||''}</div></div>
+    <div style="text-align:right">${est}<div style="color:${color};font-size:9px;margin-top:6px">${ex.categoria}</div></div>
+  </div>`;
+  if(ex.tipo==='lab')html+=`<div style="background:#080c18;border:1px solid #131d35;border-radius:6px;padding:14px;margin-bottom:12px">
+    <div style="font-size:26px;font-weight:900;color:#38bdf8">${ex.valor} <span style="font-size:12px;color:#334455">${ex.unidad||''}</span></div>
+    ${ex.ref_min!=null&&ex.ref_max!=null?`<div style="font-size:10px;color:#4a5a7a;margin-top:4px">Ref: ${ex.ref_min}–${ex.ref_max} ${ex.unidad||''}</div>`:''}
+  </div>`;
+  if(ex.hallazgos)html+=`<div style="margin-bottom:12px"><div style="font-size:8px;color:#2a3a5a;letter-spacing:2px;margin-bottom:6px">HALLAZGOS</div><div style="font-size:11px;color:#7a8aaa;line-height:1.7">${ex.hallazgos}</div></div>`;
+  if(ex.impresion)html+=`<div style="margin-bottom:12px"><div style="font-size:8px;color:#2a3a5a;letter-spacing:2px;margin-bottom:6px">IMPRESIÓN</div><div style="font-size:11px;color:#c8d4e8;line-height:1.7">${ex.impresion}</div></div>`;
+  if(ex.notas)html+=`<div style="margin-bottom:12px"><div style="font-size:8px;color:#2a3a5a;letter-spacing:2px;margin-bottom:6px">NOTAS</div><div style="font-size:11px;color:#5a6a8a">${ex.notas}</div></div>`;
+  html+=`<div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn btn-ghost" onclick="cerrarDetalle()">CERRAR</button></div>`;
+  document.getElementById('detailContent').innerHTML=html;
+  document.getElementById('detailBg').classList.add('open');
+}
+function cerrarDetalle(){document.getElementById('detailBg').classList.remove('open');}
+
+function abrirModal(){document.getElementById('modalBg').classList.add('open');document.getElementById('fFecha').valueAsDate=new Date();}
+function cerrarModal(){document.getElementById('modalBg').classList.remove('open');}
+function setTipo(t){
+  tipoActual=t;
+  document.getElementById('btnLab').classList.toggle('active',t==='lab');
+  document.getElementById('btnInf').classList.toggle('active',t==='inf');
+  document.getElementById('labFields').style.display=t==='lab'?'contents':'none';
+  document.getElementById('infFields').style.display=t==='inf'?'block':'none';
+}
+
+async function guardar(){
+  const nombre=document.getElementById('fNombre').value.trim();
+  if(!nombre){alert('Ingresa el nombre');return;}
+  const btn=document.getElementById('btnGuardar');
+  btn.textContent='GUARDANDO...';btn.disabled=true;
+  const base={tipo:tipoActual,nombre,categoria:document.getElementById('fCategoria').value,clinica:document.getElementById('fClinica').value,medico:document.getElementById('fMedico').value,fecha:document.getElementById('fFecha').value,notas:document.getElementById('fNotas').value};
+  if(tipoActual==='lab'){Object.assign(base,{valor:document.getElementById('fValor').value,unidad:document.getElementById('fUnidad').value,ref_min:document.getElementById('fRefMin').value||null,ref_max:document.getElementById('fRefMax').value||null,estado:document.getElementById('fEstado').value,hallazgos:null,impresion:null,resultado:null});}
+  else{Object.assign(base,{hallazgos:document.getElementById('fHallazgos').value,impresion:document.getElementById('fImpresion').value,resultado:document.getElementById('fResultado').value,valor:null,unidad:null,ref_min:null,ref_max:null,estado:null});}
+  await insertar(base);
+  btn.textContent='GUARDAR';btn.disabled=false;
+  cerrarModal();limpiar();render();
+}
+
+function limpiar(){['fNombre','fValor','fUnidad','fRefMin','fRefMax','fMedico','fNotas','fHallazgos','fImpresion'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});}
+
+async function eliminar(id){if(!confirm('¿Eliminar?'))return;await borrar(id);render();}
+
+function setFCat(v,el){filtCat=v;document.querySelectorAll('.filter-bar .pill').forEach(p=>{if(['TODOS','NEUROLOGÍA','IMAGENOLOGÍA','ORL','CARDIOLOGÍA','HEMATOLOGÍA','INFECTOLOGÍA','OTRO'].includes(p.textContent))p.classList.remove('active');});el.classList.add('active');render();}
+function setFCli(v,el){filtCli=v;document.querySelectorAll('.filter-bar .pill').forEach(p=>{if(['TODAS','U. ANDES','MEDS','ALEMANA','UC CHRISTUS'].includes(p.textContent))p.classList.remove('active');});el.classList.add('active');render();}
+function setTab(tab,el){activeTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('viewLista').style.display=tab==='lista'?'':'none';document.getElementById('viewTimeline').style.display=tab==='timeline'?'':'none';document.getElementById('filterBar').style.display=tab==='lista'?'flex':'none';render();}
+function onFileSelect(e){const file=e.target.files[0];if(!file)return;window.open(URL.createObjectURL(file),'_blank');abrirModal();}
+
+cargar();
+</script>
+</body>
+</html>
