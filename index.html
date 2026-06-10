@@ -1282,7 +1282,7 @@ async function onPdfSelect(e){
     });
     const resp=await fetch('https://jaalqnhekhcaqotgytzd.supabase.co/functions/v1/extract-exam',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer sb_publishable_pDsjtht8LaPnPYfylLD9Vw_H7vbYdDA'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWxxbmhla2hjYXFvdGd5dHpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDI4OTcsImV4cCI6MjA5NjE3ODg5N30.5DdlfR7KF-hyeiDDFOFuK5x_vNskWMuE5ozoJcz04WQ'},
       body:JSON.stringify({pdfBase64:base64,fileName:pdfFile.name})
     });
     const data=await resp.json();
