@@ -1268,7 +1268,46 @@ function verDetalle(id){
   document.getElementById('detailBg').classList.add('open');
 }
 function cerrarDetalle(){document.getElementById('detailBg').classList.remove('open');}
-function onPdfSelect(e){pdfFile=e.target.files[0];if(!pdfFile)return;document.getElementById('uploadZone').classList.add('has-file');document.getElementById('uploadText').textContent='✓ '+pdfFile.name;}
+async function onPdfSelect(e){
+  pdfFile=e.target.files[0];
+  if(!pdfFile)return;
+  document.getElementById('uploadZone').classList.add('has-file');
+  document.getElementById('uploadText').textContent='⟳ Analizando PDF...';
+  try{
+    const base64=await new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result.split(',')[1]);
+      r.onerror=()=>rej(new Error('Error leyendo PDF'));
+      r.readAsDataURL(pdfFile);
+    });
+    const resp=await fetch('https://jaalqnhekhcaqotgytzd.supabase.co/functions/v1/extract-exam',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer sb_publishable_pDsjtht8LaPnPYfylLD9Vw_H7vbYdDA'},
+      body:JSON.stringify({pdfBase64:base64,fileName:pdfFile.name})
+    });
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error);
+    // Rellenar formulario automáticamente
+    if(data.nombre)document.getElementById('fNombre').value=data.nombre;
+    if(data.tipo)setTipo(data.tipo);
+    if(data.fecha)document.getElementById('fFecha').value=data.fecha;
+    if(data.clinica)document.getElementById('fClinica').value=data.clinica;
+    if(data.medico)document.getElementById('fMedico').value=data.medico;
+    if(data.categoria)document.getElementById('fCategoria').value=data.categoria;
+    if(data.valor)document.getElementById('fValor').value=data.valor;
+    if(data.unidad)document.getElementById('fUnidad').value=data.unidad;
+    if(data.ref_min)document.getElementById('fRefMin').value=data.ref_min;
+    if(data.ref_max)document.getElementById('fRefMax').value=data.ref_max;
+    if(data.estado)document.getElementById('fEstado').value=data.estado;
+    if(data.hallazgos)document.getElementById('fHallazgos').value=data.hallazgos;
+    if(data.impresion)document.getElementById('fImpresion').value=data.impresion;
+    if(data.resultado)document.getElementById('fResultado').value=data.resultado;
+    document.getElementById('uploadText').textContent='✓ '+pdfFile.name+' — datos extraídos';
+  }catch(err){
+    console.error(err);
+    document.getElementById('uploadText').textContent='✓ '+pdfFile.name+' (sin extracción automática)';
+  }
+}
 function editarExamen(id){
   const ex=examenes.find(e=>e.id===id); if(!ex)return;
   editExamenId=id;
