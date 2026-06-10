@@ -64,7 +64,8 @@ Analiza este PDF y devuelve SOLO un JSON válido sin backticks ni markdown con e
 
     const data = await response.json();
     const text = data.content[0].text;
-    const parsed = JSON.parse(text);
+    const clean = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+const parsed = JSON.parse(clean);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
