@@ -327,7 +327,7 @@ textarea { resize:vertical;min-height:70px; }
     <div class="form-grid">
       <div class="full"><label>NOMBRE DEL EXAMEN</label><input id="fNombre" type="text" placeholder="Ej: Hemograma"></div>
       <div><label>CATEGORÍA</label><select id="fCategoria"><option>Neurología</option><option>Imagenología</option><option>ORL</option><option>Cardiología</option><option>Hematología</option><option>Infectología</option><option>Otro</option></select></div>
-      <div><label>CLÍNICA</label><select id="fClinica"><option>U. de los Andes</option><option>Meds</option><option>Alemana</option><option>UC Christus</option><option>Las Condes</option><option>Otra</option></select></div>
+      <div><label>CLÍNICA</label><input id="fClinica" type="text" placeholder="Ej: Alemana, UC Christus..." list="clinicasSugeridas"><datalist id="clinicasSugeridas"><option value="Alemana"><option value="UC Christus"><option value="U. de los Andes"><option value="Meds"><option value="Las Condes"><option value="Bupa Santiago"><option value="Indisa"><option value="Santa María"><option value="Red Salud"><option value="Megasalud"></datalist></div>
       <div><label>MÉDICO</label><input id="fMedico" type="text" placeholder="Dr. Nombre Apellido"></div>
       <div><label>FECHA</label><input id="fFecha" type="date"></div>
       <div id="labFields" style="display:contents">
