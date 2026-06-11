@@ -1406,12 +1406,13 @@ async function guardar(){
   }catch(e){console.error(e);setSyncStatus('err');alert('Error: '+e.message);}
   btn.textContent='GUARDAR';btn.disabled=false;
 }
+
 function limpiar(){['fNombre','fValor','fUnidad','fRefMin','fRefMax','fMedico','fNotas','fHallazgos','fImpresion','fLink'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});}
 async function eliminar(id,pdfUrl){
   if(!confirm('¿Eliminar este examen?'))return;
   setSyncStatus('loading');
   try{await borrar(id,pdfUrl);setSyncStatus('ok');renderClinicPills();render();}
-  catch(e){setSyncStatus('err');}
+  catch(e){setSyncStatus('err');} 
 }
 function setFCat(v,el){filtCat=v;document.querySelectorAll('#filterBar>.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');render();}
 function setFCli(v,el){filtCli=v;document.querySelectorAll('#clinicPills .pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');render();}
@@ -1419,3 +1420,4 @@ function setTab(tab,el){activeTab=tab;document.querySelectorAll('.tab').forEach(
 </script>
 </body>
 </html>
+
