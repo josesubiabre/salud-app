@@ -255,6 +255,9 @@ textarea { resize:vertical;min-height:70px; }
           <div class="ficha-field"><div class="ficha-label">EDAD</div><div class="ficha-value" id="fEdadVal">—</div></div>
           <div class="ficha-field"><div class="ficha-label">SEXO</div><div class="ficha-value" id="fSexoVal">—</div></div>
           <div class="ficha-field"><div class="ficha-label">GRUPO SANGUÍNEO</div><div class="ficha-value" id="fGrupoVal">—</div></div>
+          <div class="ficha-field"><div class="ficha-label">ESTADO CIVIL</div><div class="ficha-value" id="fEstadoCivilVal">—</div></div>
+          <div class="ficha-field"><div class="ficha-label">ALTURA</div><div class="ficha-value" id="fAlturaVal">—</div></div>
+          <div class="ficha-field"><div class="ficha-label">PESO</div><div class="ficha-value" id="fPesoVal">—</div></div>
         </div>
         <div class="ficha-card">
           <h3>CONTACTO</h3>
@@ -369,6 +372,9 @@ textarea { resize:vertical;min-height:70px; }
       <div><label>RUT</label><input id="pfRut" type="text" placeholder="Ej: 12.345.678-9" oninput="formatRut(this)"></div>
       <div><label>FECHA DE NACIMIENTO</label><input id="pfNacimiento" type="text" placeholder="DD/MM/AAAA" maxlength="10" oninput="formatFecha(this)"></div>
       <div><label>SEXO</label><select id="pfSexo"><option value="">— seleccionar —</option><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div>
+      <div><label>ESTADO CIVIL</label><select id="pfEstadoCivil"><option value="">— seleccionar —</option><option>Soltero/a</option><option>Casado/a</option><option>Conviviente</option><option>Divorciado/a</option><option>Viudo/a</option></select></div>
+      <div><label>ALTURA (cm)</label><input id="pfAltura" type="number" min="100" max="250"></div>
+      <div><label>PESO (kg)</label><input id="pfPeso" type="number" min="30" max="300" step="0.1"></div>
       <div><label>GRUPO SANGUÍNEO</label><select id="pfGrupo"><option value="">— seleccionar —</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
       <div><label>TELÉFONO</label><input id="pfTelefono" type="text" placeholder="Ej: +56 9 1234 5678"></div>
       <div class="full"><label>EMAIL DE CONTACTO</label><input id="pfEmail" type="email" placeholder="Ej: usuario@email.com"></div>
@@ -806,6 +812,10 @@ async function guardarFicha(){
     prevision:document.getElementById('pfPrevision').value,
     prevision_detalle:document.getElementById('pfPrevisionDet').value,    antecedentes:document.getElementById('pfAntecedentes').value,
     alergias:document.getElementById('pfAlergias').value,
+    estado_civil:document.getElementById('pfEstadoCivil').value||null,
+    altura_cm:document.getElementById('pfAltura').value?parseInt(document.getElementById('pfAltura').value):null,
+    peso_kg:document.getElementById('pfPeso').value?parseFloat(document.getElementById('pfPeso').value):null,
+    peso_fecha:document.getElementById('pfPeso').value?new Date().toISOString().split('T')[0]:null,
   };
   try{
     const{data,error}=await sb.from('perfil').upsert(datos,{onConflict:'user_id'}).select();
@@ -842,6 +852,9 @@ function renderFicha(){
   set('fPrevisionVal',prev);
   set('fAntecedentesVal',p.antecedentes);
   set('fAlergiasVal',p.alergias);
+  set('fEstadoCivilVal',p.estado_civil);
+  set('fAlturaVal',p.altura_cm?p.altura_cm+' cm':null);
+  set('fPesoVal',p.peso_kg?(p.peso_kg+' kg'+(p.peso_fecha?' · '+fmt(p.peso_fecha):'')):null);
 }
 function abrirModalFicha(){
   document.getElementById('pfNombre').value=perfil.nombre||'';
@@ -863,6 +876,9 @@ function abrirModalFicha(){
   document.getElementById('pfPrevisionDet').value=perfil.prevision_detalle||'';
   document.getElementById('pfAntecedentes').value=perfil.antecedentes||'';
   document.getElementById('pfAlergias').value=perfil.alergias||'';
+  document.getElementById('pfEstadoCivil').value=perfil.estado_civil||'';
+  document.getElementById('pfAltura').value=perfil.altura_cm||'';
+  document.getElementById('pfPeso').value=perfil.peso_kg||'';
   document.getElementById('modalFichaBg').classList.add('open');
 }
 function cerrarModalFicha(){document.getElementById('modalFichaBg').classList.remove('open');}
