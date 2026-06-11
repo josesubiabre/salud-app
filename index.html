@@ -150,6 +150,15 @@ textarea { resize:vertical;min-height:70px; }
         </button>
       </div>
       <button class="auth-btn" id="btnLogin" onclick="login()">ENTRAR</button>
+      <div style="display:flex;align-items:center;gap:10px;margin:16px 0 8px">
+        <div style="flex:1;height:0.5px;background:#d0dff0"></div>
+        <span style="font-size:11px;color:#aab8cc">o</span>
+        <div style="flex:1;height:0.5px;background:#d0dff0"></div>
+      </div>
+      <button onclick="loginGoogle()" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid #d0dff0;background:#fff;cursor:pointer;font-family:inherit;font-size:13px;color:#1a2a3a;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continuar con Google
+      </button>
     </div>
     <div id="registerForm" style="display:none">
       <div class="auth-field"><label>EMAIL</label><input id="regEmail" type="email" placeholder="tu@email.com"></div>
@@ -246,9 +255,6 @@ textarea { resize:vertical;min-height:70px; }
           <div class="ficha-field"><div class="ficha-label">EDAD</div><div class="ficha-value" id="fEdadVal">—</div></div>
           <div class="ficha-field"><div class="ficha-label">SEXO</div><div class="ficha-value" id="fSexoVal">—</div></div>
           <div class="ficha-field"><div class="ficha-label">GRUPO SANGUÍNEO</div><div class="ficha-value" id="fGrupoVal">—</div></div>
-          <div class="ficha-field"><div class="ficha-label">ESTADO CIVIL</div><div class="ficha-value" id="fEstadoCivilVal">—</div></div>
-          <div class="ficha-field"><div class="ficha-label">ALTURA</div><div class="ficha-value" id="fAlturaVal">—</div></div>
-          <div class="ficha-field"><div class="ficha-label">PESO</div><div class="ficha-value" id="fPesoVal">—</div></div>
         </div>
         <div class="ficha-card">
           <h3>CONTACTO</h3>
@@ -265,16 +271,8 @@ textarea { resize:vertical;min-height:70px; }
           <div class="ficha-field"><div class="ficha-label">CIRUGÍAS PREVIAS</div><div class="ficha-value" id="fCirugiasVal" style="line-height:1.6">—</div></div>
         </div>
       </div>
-      <!-- Contactos de emergencia -->
-      <div class="ficha-card" style="margin-bottom:20px">
-        <h3>CONTACTOS DE EMERGENCIA</h3>
-        <div id="contactosEmergenciaView">
-          <div class="ficha-value empty-val" style="font-style:italic">Sin contactos registrados</div>
-        </div>
-      </div>
       <div style="text-align:right;margin-top:-8px;margin-bottom:20px">
-        <button class="btn btn-ghost" style="margin-right:8px" onclick="abrirModalContactos()">✎ Editar contactos</button>
-        <button class="btn btn-ghost" onclick="abrirModalFicha()">✎ Editar ficha</button>
+        <button class="btn btn-ghost" onclick="abrirModalFicha()">✎ EDITAR FICHA</button>
       </div>
     </div>
 
@@ -338,7 +336,7 @@ textarea { resize:vertical;min-height:70px; }
     <div class="form-grid">
       <div class="full"><label>NOMBRE DEL EXAMEN</label><input id="fNombre" type="text" placeholder="Ej: Hemograma"></div>
       <div><label>CATEGORÍA</label><select id="fCategoria"><option>Neurología</option><option>Imagenología</option><option>ORL</option><option>Cardiología</option><option>Hematología</option><option>Infectología</option><option>Otro</option></select></div>
-      <div><label>CLÍNICA</label><select id="fClinica"><option>U. de los Andes</option><option>Meds</option><option>Alemana</option><option>UC Christus</option><option>Las Condes</option><option>Otra</option></select></div>
+      <div><label>CLÍNICA</label><input id="fClinica" type="text" placeholder="Ej: Alemana, UC Christus..." list="clinicasSugeridas"><datalist id="clinicasSugeridas"><option value="Alemana"><option value="UC Christus"><option value="U. de los Andes"><option value="Meds"><option value="Las Condes"><option value="Bupa Santiago"><option value="Indisa"><option value="Santa María"><option value="Red Salud"><option value="Megasalud"></datalist></div>
       <div><label>MÉDICO</label><input id="fMedico" type="text" placeholder="Dr. Nombre Apellido"></div>
       <div><label>FECHA</label><input id="fFecha" type="date"></div>
       <div id="labFields" style="display:contents">
@@ -373,9 +371,6 @@ textarea { resize:vertical;min-height:70px; }
       <div><label>FECHA DE NACIMIENTO</label><input id="pfNacimiento" type="text" placeholder="DD/MM/AAAA" maxlength="10" oninput="formatFecha(this)"></div>
       <div><label>SEXO</label><select id="pfSexo"><option value="">— seleccionar —</option><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div>
       <div><label>GRUPO SANGUÍNEO</label><select id="pfGrupo"><option value="">— seleccionar —</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
-      <div><label>ESTADO CIVIL</label><select id="pfEstadoCivil"><option value="">— seleccionar —</option><option>Soltero/a</option><option>Casado/a</option><option>Conviviente</option><option>Divorciado/a</option><option>Viudo/a</option></select></div>
-      <div><label>ALTURA (cm)</label><input id="pfAltura" type="number" placeholder="Ej: 175" min="100" max="250"></div>
-      <div><label>PESO (kg)</label><input id="pfPeso" type="number" placeholder="Ej: 70.5" min="30" max="300" step="0.1"></div>
       <div><label>TELÉFONO</label><input id="pfTelefono" type="text" placeholder="Ej: +56 9 1234 5678"></div>
       <div class="full"><label>EMAIL DE CONTACTO</label><input id="pfEmail" type="email" placeholder="Ej: usuario@email.com"></div>
       <div class="full"><label>CALLE Y NUMERACIÓN</label><input id="pfCalle" type="text" placeholder="Ej: Av. Providencia 1234"></div>
@@ -506,31 +501,6 @@ textarea { resize:vertical;min-height:70px; }
   </div>
 </div>
 
-<!-- Modal contactos de emergencia -->
-<div class="modal-bg" id="modalContactosBg" onclick="if(event.target===this)cerrarModalContactos()">
-  <div class="modal">
-    <h2>CONTACTOS DE EMERGENCIA</h2>
-    <div style="font-size:9px;color:#185fa5;letter-spacing:1.5px;margin-bottom:12px;font-weight:600">CONTACTO 1</div>
-    <div class="form-grid">
-      <div class="full"><label>NOMBRE COMPLETO</label><input id="ce1Nombre" type="text" placeholder="Nombre del contacto"></div>
-      <div><label>RELACIÓN</label><input id="ce1Relacion" type="text" placeholder="Ej: Madre, Pareja, Hermano"></div>
-      <div><label>TELÉFONO</label><input id="ce1Telefono" type="text" placeholder="+56 9 1234 5678"></div>
-      <div class="full"><label>EMAIL (opcional)</label><input id="ce1Email" type="email" placeholder="correo@email.com"></div>
-    </div>
-    <div style="font-size:9px;color:#185fa5;letter-spacing:1.5px;margin:16px 0 12px;font-weight:600;border-top:0.5px solid #e0ebf5;padding-top:16px">CONTACTO 2</div>
-    <div class="form-grid">
-      <div class="full"><label>NOMBRE COMPLETO</label><input id="ce2Nombre" type="text" placeholder="Nombre del contacto"></div>
-      <div><label>RELACIÓN</label><input id="ce2Relacion" type="text" placeholder="Ej: Madre, Pareja, Hermano"></div>
-      <div><label>TELÉFONO</label><input id="ce2Telefono" type="text" placeholder="+56 9 1234 5678"></div>
-      <div class="full"><label>EMAIL (opcional)</label><input id="ce2Email" type="email" placeholder="correo@email.com"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="cerrarModalContactos()">CANCELAR</button>
-      <button class="btn btn-primary" id="btnGuardarContactos" onclick="guardarContactos()">GUARDAR</button>
-    </div>
-  </div>
-</div>
-
 <script>
 const { createClient } = supabase;
 const sb = createClient(
@@ -540,7 +510,7 @@ const sb = createClient(
 );
 
 const CAT_COLORS = {Neurología:'#38bdf8',Imagenología:'#a78bfa',ORL:'#fb923c',Cardiología:'#f43f5e',Hematología:'#ef4444',Infectología:'#22c55e',Otro:'#64748b'};
-let examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, contactosEmergencia=[], filtCat='Todos', filtCli='Todas', activeTab='lista', navTab='examenes', tipoActual='lab', pdfFile=null, currentUser=null, editMedId=null, editExamenId=null, editVacId=null, editCirId=null;
+let examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, filtCat='Todos', filtCli='Todas', activeTab='lista', navTab='examenes', tipoActual='lab', pdfFile=null, currentUser=null, editMedId=null, editExamenId=null, editVacId=null, editCirId=null;
 
 // ── UTILS ──────────────────────────────────────────────────────────────
 function toggleEye(inputId, btnId) {
@@ -660,8 +630,15 @@ function fechaISOToChile(str){
 }
 function esRut(str){ return /^[\d]{7,8}[-]?[\dkK]$/.test(str.replace(/\./g,'').replace(/\s/g,'')); }
 function limpiarRut(str){ return str.replace(/\./g,'').replace(/\s/g,'').toLowerCase(); }
-
+async function loginGoogle(){
+  const{error}=await sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{redirectTo:window.location.origin}
+  });
+  if(error)showAuthErr(error.message);
+}
 async function login(){
+
   let input = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPass').value;
   if(!input||!pass){showAuthErr('Completa todos los campos');return;}
@@ -772,13 +749,12 @@ function setSyncStatus(s){
 async function cargar(){
   setSyncStatus('loading');
   try{
-    const[exRes,medRes,vacRes,cirRes,perfilRes,contactosRes]=await Promise.all([
+    const[exRes,medRes,vacRes,cirRes,perfilRes]=await Promise.all([
       sb.from('examenes').select('*').order('fecha',{ascending:false}),
       sb.from('medicamentos').select('*').order('activo',{ascending:false}),
       sb.from('vacunas').select('*').order('fecha',{ascending:false}),
       sb.from('cirugias').select('*').order('fecha',{ascending:false}),
-      sb.from('perfil').select('*').eq('user_id',currentUser.id).maybeSingle(),
-      sb.from('contactos_emergencia').select('*').order('orden',{ascending:true})
+      sb.from('perfil').select('*').eq('user_id',currentUser.id).maybeSingle()
     ]);
     if(exRes.error)throw exRes.error;
     examenes=exRes.data||[];
@@ -786,7 +762,6 @@ async function cargar(){
     vacunas=vacRes.data||[];
     cirugias=cirRes.data||[];
     perfil=perfilRes.data||{};
-    contactosEmergencia=contactosRes.data||[];
     setSyncStatus('ok');
     renderClinicPills();
   }catch(e){console.error(e);setSyncStatus('err');}
@@ -823,10 +798,6 @@ async function guardarFicha(){
     fecha_nacimiento: fechaChileToISO(document.getElementById('pfNacimiento').value)||null,
     sexo:document.getElementById('pfSexo').value,
     grupo_sanguineo:document.getElementById('pfGrupo').value,
-    estado_civil:document.getElementById('pfEstadoCivil').value,
-    altura_cm:document.getElementById('pfAltura').value?parseInt(document.getElementById('pfAltura').value):null,
-    peso_kg:document.getElementById('pfPeso').value?parseFloat(document.getElementById('pfPeso').value):null,
-    peso_fecha:document.getElementById('pfPeso').value?new Date().toISOString().split('T')[0]:null,
     telefono:document.getElementById('pfTelefono').value,
     email_contacto:document.getElementById('pfEmail').value,
     calle:document.getElementById('pfCalle').value,
@@ -864,9 +835,6 @@ function renderFicha(){
   set('fEdadVal',calcularEdad(p.fecha_nacimiento));
   set('fSexoVal',p.sexo);
   set('fGrupoVal',p.grupo_sanguineo);
-  set('fEstadoCivilVal',p.estado_civil);
-  set('fAlturaVal',p.altura_cm?p.altura_cm+' cm':null);
-  set('fPesoVal',p.peso_kg?(p.peso_kg+' kg'+(p.peso_fecha?' · '+fmt(p.peso_fecha):'')):null);
   set('fEmailVal',p.email_contacto||currentUser?.email);
   set('fTelefonoVal',p.telefono);
   const dir=[p.calle, p.tipo_domicilio&&p.depto?`${p.tipo_domicilio} ${p.depto}`:p.tipo_domicilio].filter(Boolean).join(', ');
@@ -878,17 +846,6 @@ function renderFicha(){
   set('fAntecedentesVal',p.antecedentes);
   set('fAlergiasVal',p.alergias);
   set('fCirugiasVal',p.cirugias);
-  // Contactos de emergencia
-  const cont=contactosEmergencia;
-  const el=document.getElementById('contactosEmergenciaView');
-  if(!el)return;
-  if(!cont||cont.length===0){el.innerHTML='<div class="ficha-value empty-val" style="font-style:italic">Sin contactos registrados</div>';return;}
-  el.innerHTML=cont.map(c=>`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:0.5px solid #f0f4f9">
-    <div style="font-size:10px;color:#aab8cc;letter-spacing:0.5px;margin-bottom:2px">CONTACTO ${c.orden}</div>
-    <div style="font-size:13px;color:#1a2a3a;font-weight:500">${c.nombre||'—'} <span style="font-size:11px;color:#7a9ab8;font-weight:400">${c.relacion?'· '+c.relacion:''}</span></div>
-    <div style="font-size:12px;color:#378add;margin-top:2px">${c.telefono||''}</div>
-    ${c.email?`<div style="font-size:11px;color:#7a9ab8">${c.email}</div>`:''}
-  </div>`).join('');
 }
 function abrirModalFicha(){
   document.getElementById('pfNombre').value=perfil.nombre||'';
@@ -896,9 +853,6 @@ function abrirModalFicha(){
   document.getElementById('pfNacimiento').value=fechaISOToChile(perfil.fecha_nacimiento||'');
   document.getElementById('pfSexo').value=perfil.sexo||'';
   document.getElementById('pfGrupo').value=perfil.grupo_sanguineo||'';
-  document.getElementById('pfEstadoCivil').value=perfil.estado_civil||'';
-  document.getElementById('pfAltura').value=perfil.altura_cm||'';
-  document.getElementById('pfPeso').value=perfil.peso_kg||'';
   document.getElementById('pfTelefono').value=perfil.telefono||'';
   document.getElementById('pfEmail').value=perfil.email_contacto||currentUser?.email||'';
   document.getElementById('pfCalle').value=perfil.calle||'';
@@ -917,40 +871,6 @@ function abrirModalFicha(){
   document.getElementById('modalFichaBg').classList.add('open');
 }
 function cerrarModalFicha(){document.getElementById('modalFichaBg').classList.remove('open');}
-
-// ── CONTACTOS DE EMERGENCIA ────────────────────────────────────────────
-function abrirModalContactos(){
-  const c1=contactosEmergencia.find(c=>c.orden===1)||{};
-  const c2=contactosEmergencia.find(c=>c.orden===2)||{};
-  document.getElementById('ce1Nombre').value=c1.nombre||'';
-  document.getElementById('ce1Relacion').value=c1.relacion||'';
-  document.getElementById('ce1Telefono').value=c1.telefono||'';
-  document.getElementById('ce1Email').value=c1.email||'';
-  document.getElementById('ce2Nombre').value=c2.nombre||'';
-  document.getElementById('ce2Relacion').value=c2.relacion||'';
-  document.getElementById('ce2Telefono').value=c2.telefono||'';
-  document.getElementById('ce2Email').value=c2.email||'';
-  document.getElementById('modalContactosBg').classList.add('open');
-}
-function cerrarModalContactos(){document.getElementById('modalContactosBg').classList.remove('open');}
-async function guardarContactos(){
-  const btn=document.getElementById('btnGuardarContactos');
-  btn.textContent='GUARDANDO...';btn.disabled=true;
-  try{
-    // Eliminar contactos existentes y reinsertar
-    await sb.from('contactos_emergencia').delete().eq('user_id',currentUser.id);
-    const nuevos=[];
-    const n1=document.getElementById('ce1Nombre').value.trim();
-    const n2=document.getElementById('ce2Nombre').value.trim();
-    if(n1) nuevos.push({user_id:currentUser.id,orden:1,nombre:n1,relacion:document.getElementById('ce1Relacion').value,telefono:document.getElementById('ce1Telefono').value,email:document.getElementById('ce1Email').value||null});
-    if(n2) nuevos.push({user_id:currentUser.id,orden:2,nombre:n2,relacion:document.getElementById('ce2Relacion').value,telefono:document.getElementById('ce2Telefono').value,email:document.getElementById('ce2Email').value||null});
-    if(nuevos.length>0){const{error}=await sb.from('contactos_emergencia').insert(nuevos);if(error)throw error;}
-    const{data}=await sb.from('contactos_emergencia').select('*').order('orden',{ascending:true});
-    contactosEmergencia=data||[];
-    cerrarModalContactos();renderFicha();
-  }catch(e){alert('Error: '+e.message);}
-  btn.textContent='GUARDAR';btn.disabled=false;
-}
 
 // ── MEDICAMENTOS ───────────────────────────────────────────────────────
 function renderMedicamentos(){
@@ -1364,7 +1284,46 @@ function verDetalle(id){
   document.getElementById('detailBg').classList.add('open');
 }
 function cerrarDetalle(){document.getElementById('detailBg').classList.remove('open');}
-function onPdfSelect(e){pdfFile=e.target.files[0];if(!pdfFile)return;document.getElementById('uploadZone').classList.add('has-file');document.getElementById('uploadText').textContent='✓ '+pdfFile.name;}
+async function onPdfSelect(e){
+  pdfFile=e.target.files[0];
+  if(!pdfFile)return;
+  document.getElementById('uploadZone').classList.add('has-file');
+  document.getElementById('uploadText').textContent='⟳ Analizando PDF...';
+  try{
+    const base64=await new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result.split(',')[1]);
+      r.onerror=()=>rej(new Error('Error leyendo PDF'));
+      r.readAsDataURL(pdfFile);
+    });
+    const resp=await fetch('https://jaalqnhekhcaqotgytzd.supabase.co/functions/v1/extract-exam',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWxxbmhla2hjYXFvdGd5dHpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDI4OTcsImV4cCI6MjA5NjE3ODg5N30.5DdlfR7KF-hyeiDDFOFuK5x_vNskWMuE5ozoJcz04WQ'},
+      body:JSON.stringify({pdfBase64:base64,fileName:pdfFile.name})
+    });
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error);
+    // Rellenar formulario automáticamente
+    if(data.nombre)document.getElementById('fNombre').value=data.nombre;
+    if(data.tipo)setTipo(data.tipo);
+    if(data.fecha)document.getElementById('fFecha').value=data.fecha;
+    if(data.clinica)document.getElementById('fClinica').value=data.clinica;
+    if(data.medico)document.getElementById('fMedico').value=data.medico;
+    if(data.categoria)document.getElementById('fCategoria').value=data.categoria;
+    if(data.valor)document.getElementById('fValor').value=data.valor;
+    if(data.unidad)document.getElementById('fUnidad').value=data.unidad;
+    if(data.ref_min)document.getElementById('fRefMin').value=data.ref_min;
+    if(data.ref_max)document.getElementById('fRefMax').value=data.ref_max;
+    if(data.estado)document.getElementById('fEstado').value=data.estado;
+    if(data.hallazgos)document.getElementById('fHallazgos').value=data.hallazgos;
+    if(data.impresion)document.getElementById('fImpresion').value=data.impresion;
+    if(data.resultado)document.getElementById('fResultado').value=data.resultado;
+    document.getElementById('uploadText').textContent='✓ '+pdfFile.name+' — datos extraídos';
+  }catch(err){
+    console.error(err);
+    document.getElementById('uploadText').textContent='✓ '+pdfFile.name+' (sin extracción automática)';
+  }
+}
 function editarExamen(id){
   const ex=examenes.find(e=>e.id===id); if(!ex)return;
   editExamenId=id;
