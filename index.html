@@ -268,7 +268,6 @@ textarea { resize:vertical;min-height:70px; }
           <h3>ANTECEDENTES CLÍNICOS</h3>
           <div class="ficha-field"><div class="ficha-label">CONDICIONES CRÓNICAS</div><div class="ficha-value" id="fAntecedentesVal" style="line-height:1.6">—</div></div>
           <div class="ficha-field"><div class="ficha-label">ALERGIAS</div><div class="ficha-value" id="fAlergiasVal">—</div></div>
-          <div class="ficha-field"><div class="ficha-label">CIRUGÍAS PREVIAS</div><div class="ficha-value" id="fCirugiasVal" style="line-height:1.6">—</div></div>
         </div>
       </div>
       <div style="text-align:right;margin-top:-8px;margin-bottom:20px">
@@ -384,7 +383,6 @@ textarea { resize:vertical;min-height:70px; }
       <div id="pfPrevisionDetDiv" style="display:none"><label id="pfPrevisionDetLabel">DETALLE</label><select id="pfPrevisionDet"><option value="">— seleccionar —</option></select></div>
       <div class="full"><label>CONDICIONES CRÓNICAS / ANTECEDENTES</label><textarea id="pfAntecedentes" placeholder="Ej: Hipertensión, Diabetes tipo 2..."></textarea></div>
       <div class="full"><label>ALERGIAS</label><textarea id="pfAlergias" placeholder="Ej: Penicilina, AINEs..." style="min-height:50px"></textarea></div>
-      <div class="full"><label>CIRUGÍAS PREVIAS</label><textarea id="pfCirugias" placeholder="Ej: Apendicectomía 2010, Artroscopia 2018..."></textarea></div>
     </div>
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="cerrarModalFicha()">CANCELAR</button>
@@ -808,7 +806,6 @@ async function guardarFicha(){
     prevision:document.getElementById('pfPrevision').value,
     prevision_detalle:document.getElementById('pfPrevisionDet').value,    antecedentes:document.getElementById('pfAntecedentes').value,
     alergias:document.getElementById('pfAlergias').value,
-    cirugias:document.getElementById('pfCirugias').value
   };
   try{
     const{data,error}=await sb.from('perfil').upsert(datos,{onConflict:'user_id'}).select();
@@ -845,7 +842,6 @@ function renderFicha(){
   set('fPrevisionVal',prev);
   set('fAntecedentesVal',p.antecedentes);
   set('fAlergiasVal',p.alergias);
-  set('fCirugiasVal',p.cirugias);
 }
 function abrirModalFicha(){
   document.getElementById('pfNombre').value=perfil.nombre||'';
@@ -867,7 +863,6 @@ function abrirModalFicha(){
   document.getElementById('pfPrevisionDet').value=perfil.prevision_detalle||'';
   document.getElementById('pfAntecedentes').value=perfil.antecedentes||'';
   document.getElementById('pfAlergias').value=perfil.alergias||'';
-  document.getElementById('pfCirugias').value=perfil.cirugias||'';
   document.getElementById('modalFichaBg').classList.add('open');
 }
 function cerrarModalFicha(){document.getElementById('modalFichaBg').classList.remove('open');}
