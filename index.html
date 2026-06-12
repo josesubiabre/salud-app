@@ -1137,8 +1137,8 @@ async function explicarMed(id, nombre, dosis){
   }
 }
 async function revisarInteracciones(){
-  const activos = medicamentos.filter(m=>m.activo);
-  if(activos.length < 2){ alert('Necesitas al menos 2 medicamentos activos para revisar interacciones.'); return; }
+  const activos = medicamentos.filter(m=>m.activo && m.categoria === 'Medicamento');
+  if(activos.length < 2){ alert('Necesitas al menos 2 medicamentos con categoría "Medicamento" para revisar interacciones.'); return; }
   const box = document.getElementById('interaccionesBox');
   box.style.display='block';
   box.innerHTML='<span style="color:#aab8cc">Analizando interacciones...</span>';
