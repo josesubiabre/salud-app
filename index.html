@@ -356,7 +356,10 @@ textarea { resize:vertical;min-height:70px; }
         </div>
         <button class="btn btn-ghost" style="font-size:11px" onclick="revisarInteracciones()">Revisar interacciones</button>
       </div>
-      <div id="interaccionesBox" style="display:none;margin-bottom:16px;padding:14px 16px;background:#fff;border:0.5px solid #d0dff0;border-radius:10px;font-size:12px;line-height:1.7"></div>
+      <div id="interaccionesBox" style="display:none;margin-bottom:16px;padding:14px 16px;background:#fff;border:0.5px solid #d0dff0;border-radius:10px;font-size:12px;line-height:1.7;position:relative">
+        <button onclick="document.getElementById('interaccionesBox').style.display='none'" style="position:absolute;top:8px;right:10px;background:none;border:none;cursor:pointer;font-size:16px;color:#aab8cc;line-height:1">×</button>
+        <div id="interaccionesContent"></div>
+      </div>
       <div id="medsActivos"></div>
       <div class="section-header" style="margin-top:24px">
         <div class="section-title">SUSPENDIDOS / HISTÓRICO</div>
@@ -611,6 +614,7 @@ const sb = createClient(
 
 const CAT_COLORS = {Neurología:'#38bdf8',Imagenología:'#a78bfa',ORL:'#fb923c',Cardiología:'#f43f5e',Hematología:'#ef4444',Infectología:'#22c55e',Otro:'#64748b'};
 let isEmergencyMode=false, examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, contactosEmergencia=[], filtCat='Todos', filtCli='Todas', activeTab='lista', navTab='examenes', tipoActual='lab', pdfFile=null, currentUser=null, editMedId=null, editExamenId=null, editVacId=null, editCirId=null;
+let interaccionesCache = null, interaccionesMedHash = '';
 
 // ── MODO EMERGENCIA ────────────────────────────────────────────────────
 (async()=>{
@@ -1137,11 +1141,17 @@ async function explicarMed(id, nombre, dosis){
   }
 }
 async function revisarInteracciones(){
-  const activos = medicamentos.filter(m=>m.activo && m.categoria === 'Medicamento');
+  const activos = medicamentos.filter(m=>m.activo && m.categoria==='Medicamento');
   if(activos.length < 2){ alert('Necesitas al menos 2 medicamentos con categoría "Medicamento" para revisar interacciones.'); return; }
   const box = document.getElementById('interaccionesBox');
+  const content = document.getElementById('interaccionesContent');
+  const hash = activos.map(m=>m.id+m.nombre).join(',');
+  // Toggle si ya está visible con el mismo hash
+  if(box.style.display !== 'none' && interaccionesMedHash === hash){ box.style.display='none'; return; }
   box.style.display='block';
-  box.innerHTML='<span style="color:#aab8cc">Analizando interacciones...</span>';
+  // Usar caché si no cambiaron los medicamentos
+  if(interaccionesCache && interaccionesMedHash === hash){ content.innerHTML = interaccionesCache; return; }
+  content.innerHTML='<span style="color:#aab8cc">⟳ Analizando interacciones...</span>';
   const lista = activos.map(m=>`${m.nombre}${m.dosis?' '+m.dosis:''}`);
   try{
     const resp = await fetch('https://jaalqnhekhcaqotgytzd.supabase.co/functions/v1/ai-med',{
@@ -1150,22 +1160,22 @@ async function revisarInteracciones(){
       body:JSON.stringify({type:'interactions',medicamentos:lista})
     });
     const result = await resp.json();
-    if(result.error)throw new Error(result.error);
+    if(result.error) throw new Error(result.error);
+    let html = '';
     if(result.sin_interacciones || !result.interacciones.length){
-      box.innerHTML='<span style="color:#0f6e56">✓ No se detectaron interacciones relevantes entre tus medicamentos activos.</span>';
+      html='<span style="color:#0f6e56">✓ No se detectaron interacciones relevantes entre tus medicamentos activos.</span>';
     } else {
-      const colores = {leve:'#854f0b', moderada:'#a32d2d', grave:'#e24b4a'};
-      const fondos = {leve:'#faeeda', moderada:'#fcebeb', grave:'#fff0f0'};
-      box.innerHTML = '<div style="font-size:9px;color:#185fa5;letter-spacing:1.5px;font-weight:600;margin-bottom:10px">INTERACCIONES DETECTADAS</div>'
-        + result.interacciones.map(i=>`
-          <div style="margin-bottom:10px;padding:10px 12px;background:${fondos[i.severidad]||'#faeeda'};border-radius:8px;border:0.5px solid ${colores[i.severidad]||'#854f0b'}">
-            <div style="font-size:10px;font-weight:600;color:${colores[i.severidad]||'#854f0b'};margin-bottom:4px">${i.medicamentos} <span style="font-size:9px;letter-spacing:1px">[${i.severidad.toUpperCase()}]</span></div>
-            <div style="font-size:11px;color:#1a2a3a">${i.descripcion}</div>
-          </div>`).join('')
-        + '<div style="font-size:10px;color:#aab8cc;margin-top:10px;border-top:0.5px solid #e0ebf5;padding-top:10px">⚠ Esta información es orientativa y no reemplaza el criterio de tu médico o farmacéutico. Consulta siempre con un profesional de salud.</div>';
+      const colores={leve:'#854f0b',moderada:'#a32d2d',grave:'#e24b4a'};
+      const fondos={leve:'#faeeda',moderada:'#fcebeb',grave:'#fff0f0'};
+      html='<div style="font-size:9px;color:#185fa5;letter-spacing:1.5px;font-weight:600;margin-bottom:10px">INTERACCIONES DETECTADAS</div>'
+        +result.interacciones.map(i=>`<div style="margin-bottom:10px;padding:10px 12px;background:${fondos[i.severidad]||'#faeeda'};border-radius:8px;border:0.5px solid ${colores[i.severidad]||'#854f0b'}"><div style="font-size:10px;font-weight:600;color:${colores[i.severidad]||'#854f0b'};margin-bottom:4px">${i.medicamentos} <span style="font-size:9px;letter-spacing:1px">[${i.severidad.toUpperCase()}]</span></div><div style="font-size:11px;color:#1a2a3a">${i.descripcion}</div></div>`).join('')
+        +'<div style="font-size:10px;color:#aab8cc;margin-top:10px;border-top:0.5px solid #e0ebf5;padding-top:10px">⚠ Esta información es orientativa y no reemplaza el criterio de tu médico o farmacéutico. Consulta siempre con un profesional de salud.</div>';
     }
+    interaccionesCache = html;
+    interaccionesMedHash = hash;
+    content.innerHTML = html;
   }catch(e){
-    box.innerHTML='<span style="color:#e24b4a">No se pudo analizar las interacciones.</span>';
+    content.innerHTML='<span style="color:#e24b4a">No se pudo analizar las interacciones.</span>';
   }
 }
 function toggleHasta(){
