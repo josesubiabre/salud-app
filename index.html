@@ -357,7 +357,10 @@ textarea { resize:vertical;min-height:70px; }
         <button class="btn btn-ghost" style="font-size:11px" onclick="revisarInteracciones()">Revisar interacciones</button>
       </div>
       <div id="interaccionesBox" style="display:none;margin-bottom:16px;padding:14px 16px;background:#fff;border:0.5px solid #d0dff0;border-radius:10px;font-size:12px;line-height:1.7;position:relative">
-        <button onclick="document.getElementById('interaccionesBox').style.display='none'" style="position:absolute;top:8px;right:10px;background:none;border:none;cursor:pointer;font-size:16px;color:#aab8cc;line-height:1">×</button>
+        <div style="position:absolute;top:8px;right:10px;display:flex;gap:8px;align-items:center">
+          <button id="btnActualizarInteracciones" onclick="revisarInteracciones(true)" style="background:none;border:none;cursor:pointer;font-size:11px;color:#aab8cc;line-height:1;padding:2px 4px" title="Actualizar">↺ Actualizar</button>
+          <button onclick="document.getElementById('interaccionesBox').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:16px;color:#aab8cc;line-height:1">×</button>
+        </div>
         <div id="interaccionesContent"></div>
       </div>
       <div id="medsActivos"></div>
@@ -1140,17 +1143,25 @@ async function explicarMed(id, nombre, dosis){
     box.innerHTML='<div class="med-info-loading">No se pudo obtener información.</div>';
   }
 }
-async function revisarInteracciones(){
+async function revisarInteracciones(forzar=false){
   const activos = medicamentos.filter(m=>m.activo && m.categoria==='Medicamento');
   if(activos.length < 2){ alert('Necesitas al menos 2 medicamentos con categoría "Medicamento" para revisar interacciones.'); return; }
   const box = document.getElementById('interaccionesBox');
   const content = document.getElementById('interaccionesContent');
   const hash = activos.map(m=>m.id+m.nombre).join(',');
-  // Toggle si ya está visible con el mismo hash
-  if(box.style.display !== 'none' && interaccionesMedHash === hash){ box.style.display='none'; return; }
+  // Toggle si ya está visible con el mismo hash y no es forzado
+  if(!forzar && box.style.display !== 'none' && interaccionesMedHash === hash){ box.style.display='none'; return; }
   box.style.display='block';
-  // Usar caché si no cambiaron los medicamentos
-  if(interaccionesCache && interaccionesMedHash === hash){ content.innerHTML = interaccionesCache; return; }
+  // Usar caché en memoria si no es forzado
+  if(!forzar && interaccionesCache && interaccionesMedHash === hash){ content.innerHTML = interaccionesCache; return; }
+  // Usar caché de Supabase si existe y no es forzado
+  if(!forzar && perfil.interacciones_cache){
+    interaccionesCache = perfil.interacciones_cache;
+    interaccionesMedHash = hash;
+    content.innerHTML = interaccionesCache;
+    return;
+  }
+  // Llamar a Claude
   content.innerHTML='<span style="color:#aab8cc">⟳ Analizando interacciones...</span>';
   const lista = activos.map(m=>`${m.nombre}${m.dosis?' '+m.dosis:''}`);
   try{
@@ -1174,8 +1185,12 @@ async function revisarInteracciones(){
     interaccionesCache = html;
     interaccionesMedHash = hash;
     content.innerHTML = html;
+    await sb.from('perfil').update({
+      interacciones_cache: html,
+      interacciones_cache_fecha: new Date().toISOString()
+    }).eq('user_id', currentUser.id);
   }catch(e){
-    content.innerHTML='<span style="color:#e24b4a">No se pudo analizar las interacciones.</span>';
+    content.innerHTML=`<span style="color:#e24b4a">No se pudo analizar las interacciones: ${e.message}</span>`;
   }
 }
 function toggleHasta(){
@@ -1229,6 +1244,9 @@ async function guardarMed(){
       medicamentos.unshift(data[0]);
     }
     cerrarModalMed();renderMedicamentos();
+    // Invalidar caché de interacciones al cambiar medicamentos
+    interaccionesCache=null; interaccionesMedHash='';
+    await sb.from('perfil').update({interacciones_cache:null,interacciones_cache_fecha:null}).eq('user_id',currentUser.id);
   }catch(e){alert('Error: '+e.message);}
   btn.textContent='GUARDAR';btn.disabled=false;
 }
@@ -1237,6 +1255,8 @@ async function eliminarMed(id){
   await sb.from('medicamentos').delete().eq('id',id);
   medicamentos=medicamentos.filter(m=>m.id!==id);
   renderMedicamentos();
+  interaccionesCache=null; interaccionesMedHash='';
+  await sb.from('perfil').update({interacciones_cache:null,interacciones_cache_fecha:null}).eq('user_id',currentUser.id);
 }
 
 // ── VACUNAS ────────────────────────────────────────────────────────────
