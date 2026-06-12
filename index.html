@@ -272,8 +272,12 @@ textarea { resize:vertical;min-height:70px; }
           <div class="ficha-field"><div class="ficha-label">CONDICIONES CRÓNICAS</div><div class="ficha-value" id="fAntecedentesVal" style="line-height:1.6">—</div></div>
           <div class="ficha-field"><div class="ficha-label">ALERGIAS</div><div class="ficha-value" id="fAlergiasVal">—</div></div>
         </div>
+        <div class="ficha-card" id="contactosEmergenciaView">
+          <h3>CONTACTOS DE EMERGENCIA</h3>
+        </div>
       </div>
       <div style="text-align:right;margin-top:-8px;margin-bottom:20px">
+        <button class="btn btn-ghost" onclick="abrirModalContactos()">✎ EDITAR CONTACTOS</button>
         <button class="btn btn-ghost" onclick="abrirModalFicha()">✎ EDITAR FICHA</button>
       </div>
     </div>
@@ -505,6 +509,30 @@ textarea { resize:vertical;min-height:70px; }
   </div>
 </div>
 
+<!-- Modal contactos de emergencia -->
+<div class="modal-bg" id="modalContactosBg" onclick="if(event.target===this)cerrarModalContactos()">
+  <div class="modal">
+    <h2>CONTACTOS DE EMERGENCIA</h2>
+    <div class="form-grid">
+      <div style="grid-column:1/-1;font-size:9px;color:#38bdf8;letter-spacing:2px;margin-top:4px">CONTACTO 1</div>
+      <div><label>NOMBRE</label><input id="ce1Nombre" type="text" placeholder="Ej: María Pérez"></div>
+      <div><label>RELACIÓN</label><input id="ce1Relacion" type="text" placeholder="Ej: Madre, Pareja, Hermano"></div>
+      <div><label>TELÉFONO</label><input id="ce1Telefono" type="text" placeholder="Ej: +56 9 1234 5678"></div>
+      <div><label>EMAIL (opcional)</label><input id="ce1Email" type="email" placeholder="Ej: contacto@email.com"></div>
+
+      <div style="grid-column:1/-1;font-size:9px;color:#38bdf8;letter-spacing:2px;margin-top:8px">CONTACTO 2</div>
+      <div><label>NOMBRE</label><input id="ce2Nombre" type="text" placeholder="Ej: Juan Pérez"></div>
+      <div><label>RELACIÓN</label><input id="ce2Relacion" type="text" placeholder="Ej: Madre, Pareja, Hermano"></div>
+      <div><label>TELÉFONO</label><input id="ce2Telefono" type="text" placeholder="Ej: +56 9 1234 5678"></div>
+      <div><label>EMAIL (opcional)</label><input id="ce2Email" type="email" placeholder="Ej: contacto@email.com"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="cerrarModalContactos()">CANCELAR</button>
+      <button class="btn btn-primary" id="btnGuardarContactos" onclick="guardarContactos()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const { createClient } = supabase;
 const sb = createClient(
@@ -514,7 +542,7 @@ const sb = createClient(
 );
 
 const CAT_COLORS = {Neurología:'#38bdf8',Imagenología:'#a78bfa',ORL:'#fb923c',Cardiología:'#f43f5e',Hematología:'#ef4444',Infectología:'#22c55e',Otro:'#64748b'};
-let examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, filtCat='Todos', filtCli='Todas', activeTab='lista', navTab='examenes', tipoActual='lab', pdfFile=null, currentUser=null, editMedId=null, editExamenId=null, editVacId=null, editCirId=null;
+let examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, contactosEmergencia=[], filtCat='Todos', filtCli='Todas', activeTab='lista', navTab='examenes', tipoActual='lab', pdfFile=null, currentUser=null, editMedId=null, editExamenId=null, editVacId=null, editCirId=null;
 
 // ── UTILS ──────────────────────────────────────────────────────────────
 function toggleEye(inputId, btnId) {
@@ -753,12 +781,13 @@ function setSyncStatus(s){
 async function cargar(){
   setSyncStatus('loading');
   try{
-    const[exRes,medRes,vacRes,cirRes,perfilRes]=await Promise.all([
+    const[exRes,medRes,vacRes,cirRes,perfilRes,contRes]=await Promise.all([
       sb.from('examenes').select('*').order('fecha',{ascending:false}),
       sb.from('medicamentos').select('*').order('activo',{ascending:false}),
       sb.from('vacunas').select('*').order('fecha',{ascending:false}),
       sb.from('cirugias').select('*').order('fecha',{ascending:false}),
-      sb.from('perfil').select('*').eq('user_id',currentUser.id).maybeSingle()
+      sb.from('perfil').select('*').eq('user_id',currentUser.id).maybeSingle(),
+sb.from('contactos_emergencia').select('*').order('orden',{ascending:true})
     ]);
     if(exRes.error)throw exRes.error;
     examenes=exRes.data||[];
@@ -766,6 +795,7 @@ async function cargar(){
     vacunas=vacRes.data||[];
     cirugias=cirRes.data||[];
     perfil=perfilRes.data||{};
+    contactosEmergencia=contRes.data||[];
     setSyncStatus('ok');
     renderClinicPills();
   }catch(e){console.error(e);setSyncStatus('err');}
@@ -855,6 +885,17 @@ function renderFicha(){
   set('fEstadoCivilVal',p.estado_civil);
   set('fAlturaVal',p.altura_cm?p.altura_cm+' cm':null);
   set('fPesoVal',p.peso_kg?(p.peso_kg+' kg'+(p.peso_fecha?' · '+fmt(p.peso_fecha):'')):null);
+  const ceEl=document.getElementById('contactosEmergenciaView');
+  if(ceEl){
+    const body=!contactosEmergencia.length
+      ? '<div class="ficha-field"><div class="ficha-value empty-val">Sin contactos registrados</div></div>'
+      : contactosEmergencia.map(c=>`
+        <div class="ficha-field">
+          <div class="ficha-label">${c.relacion||'CONTACTO'}</div>
+          <div class="ficha-value">${[c.nombre,c.telefono,c.email].filter(Boolean).join(' · ')||'—'}</div>
+        </div>`).join('');
+    ceEl.innerHTML='<h3>CONTACTOS DE EMERGENCIA</h3>'+body;
+  }
 }
 function abrirModalFicha(){
   document.getElementById('pfNombre').value=perfil.nombre||'';
@@ -882,6 +923,42 @@ function abrirModalFicha(){
   document.getElementById('modalFichaBg').classList.add('open');
 }
 function cerrarModalFicha(){document.getElementById('modalFichaBg').classList.remove('open');}
+
+// ── CONTACTOS DE EMERGENCIA ────────────────────────────────────────────
+function abrirModalContactos(){
+  const setVal=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  const c1=contactosEmergencia.find(c=>c.orden===1)||{};
+  const c2=contactosEmergencia.find(c=>c.orden===2)||{};
+  setVal('ce1Nombre',c1.nombre);setVal('ce1Relacion',c1.relacion);setVal('ce1Telefono',c1.telefono);setVal('ce1Email',c1.email);
+  setVal('ce2Nombre',c2.nombre);setVal('ce2Relacion',c2.relacion);setVal('ce2Telefono',c2.telefono);setVal('ce2Email',c2.email);
+  document.getElementById('modalContactosBg').classList.add('open');
+}
+function cerrarModalContactos(){document.getElementById('modalContactosBg').classList.remove('open');}
+async function guardarContactos(){
+  const btn=document.getElementById('btnGuardarContactos');
+  btn.textContent='GUARDANDO...';btn.disabled=true;
+  const get=id=>document.getElementById(id)?.value.trim()||'';
+  const contactos=[1,2].map(orden=>({
+    orden,
+    nombre:get(`ce${orden}Nombre`),
+    relacion:get(`ce${orden}Relacion`),
+    telefono:get(`ce${orden}Telefono`),
+    email:get(`ce${orden}Email`)||null,
+  })).filter(c=>c.nombre||c.relacion||c.telefono||c.email);
+  try{
+    const{error:delError}=await sb.from('contactos_emergencia').delete().eq('user_id',currentUser.id);
+    if(delError)throw delError;
+    if(contactos.length){
+      const{data,error}=await sb.from('contactos_emergencia').insert(contactos.map(c=>({...c,user_id:currentUser.id}))).select().order('orden',{ascending:true});
+      if(error)throw error;
+      contactosEmergencia=data||[];
+    }else{
+      contactosEmergencia=[];
+    }
+    cerrarModalContactos();renderFicha();
+  }catch(e){alert('Error: '+e.message);}
+  btn.textContent='GUARDAR';btn.disabled=false;
+}
 
 // ── MEDICAMENTOS ───────────────────────────────────────────────────────
 function renderMedicamentos(){
