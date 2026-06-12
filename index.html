@@ -1091,7 +1091,7 @@ function renderMedicamentos(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div style="flex:1">
         <div class="med-nombre">${m.nombre} <span style="font-size:10px;color:#4a5a7a;font-weight:400">${m.dosis||''} ${m.presentacion||''}</span>
-          ${m.categoria?`<span style="font-size:8px;color:#38bdf8;border:1px solid #1e2a4a;padding:1px 6px;border-radius:100px;margin-left:4px">${m.categoria}</span>`:''}
+          ${m.categoria?(()=>{const cat={Medicamento:{c:'#185fa5',b:'#e6f1fb',br:'#b5d4f4'},'Vitamina / Suplemento':{c:'#0f6e56',b:'#e1f5ee',br:'#9fe1cb'},'Homeopático / Natural':{c:'#6b4c2a',b:'#f5ede0',br:'#d4b896'},Otro:{c:'#534ab7',b:'#eeecfb',br:'#c4bff0'}}[m.categoria]||{c:'#64748b',b:'#f1f5f9',br:'#cbd5e1'};return `<span style="font-size:8px;color:${cat.c};background:${cat.b};border:1px solid ${cat.br};padding:1px 6px;border-radius:100px;margin-left:4px">${m.categoria}</span>`;})():''}
         </div>
         <div class="med-detalle">${[m.cantidad?m.cantidad+' unidad':'',m.momento,m.frecuencia].filter(Boolean).join(' · ')}</div>
         <div class="med-detalle">${[m.medico?'Dr. '+m.medico:'',m.desde?'desde '+fmt(m.desde):'',m.hasta?'hasta '+fmt(m.hasta):''].filter(Boolean).join(' · ')}</div>
