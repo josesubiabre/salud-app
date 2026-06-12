@@ -140,6 +140,10 @@ textarea { resize:vertical;min-height:70px; }
 .emg-value { font-size:14px; color:#1a2a3a; font-weight:500; line-height:1.5; }
 .emg-value.big { font-size:26px; font-weight:700; color:#185fa5; }
 .emg-footer { text-align:center; font-size:10px; color:#aab8cc; margin-top:20px; max-width:700px; margin-left:auto; margin-right:auto; }
+
+.med-info-box { margin-top:10px; padding:10px 12px; background:#f0f7ff; border:0.5px solid #b5d4f4; border-radius:8px; font-size:11px; color:#1a2a3a; line-height:1.6; }
+.med-info-box .info-label { font-size:9px; color:#378add; letter-spacing:1px; font-weight:600; margin-bottom:3px; }
+.med-info-loading { font-size:11px; color:#aab8cc; margin-top:8px; }
 </style>
 </head>
 <body>
@@ -350,7 +354,9 @@ textarea { resize:vertical;min-height:70px; }
         <div>
           <div class="section-title">MEDICAMENTOS ACTIVOS</div>
         </div>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="revisarInteracciones()">Revisar interacciones</button>
       </div>
+      <div id="interaccionesBox" style="display:none;margin-bottom:16px;padding:14px 16px;background:#fff;border:0.5px solid #d0dff0;border-radius:10px;font-size:12px;line-height:1.7"></div>
       <div id="medsActivos"></div>
       <div class="section-header" style="margin-top:24px">
         <div class="section-title">SUSPENDIDOS / HISTÓRICO</div>
@@ -1081,23 +1087,86 @@ async function guardarContactos(){
 function renderMedicamentos(){
   const activos=medicamentos.filter(m=>m.activo);
   const suspendidos=medicamentos.filter(m=>!m.activo);
-  const renderMed=(m)=>`<div class="med-item">
-    <div style="flex:1">
-      <div class="med-nombre">${m.nombre} <span style="font-size:10px;color:#4a5a7a;font-weight:400">${m.dosis||''} ${m.presentacion||''}</span>
-        ${m.categoria?`<span style="font-size:8px;color:#38bdf8;border:1px solid #1e2a4a;padding:1px 6px;border-radius:100px;margin-left:4px">${m.categoria}</span>`:''}
+  const renderMed=(m)=>`<div class="med-item" style="flex-direction:column;align-items:stretch" id="medItem_${m.id}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1">
+        <div class="med-nombre">${m.nombre} <span style="font-size:10px;color:#4a5a7a;font-weight:400">${m.dosis||''} ${m.presentacion||''}</span>
+          ${m.categoria?`<span style="font-size:8px;color:#38bdf8;border:1px solid #1e2a4a;padding:1px 6px;border-radius:100px;margin-left:4px">${m.categoria}</span>`:''}
+        </div>
+        <div class="med-detalle">${[m.cantidad?m.cantidad+' unidad':'',m.momento,m.frecuencia].filter(Boolean).join(' · ')}</div>
+        <div class="med-detalle">${[m.medico?'Dr. '+m.medico:'',m.desde?'desde '+fmt(m.desde):'',m.hasta?'hasta '+fmt(m.hasta):''].filter(Boolean).join(' · ')}</div>
+        ${m.notas?`<div style="font-size:10px;color:#2a3a5a;margin-top:2px">${m.notas}</div>`:''}
       </div>
-      <div class="med-detalle">${[m.cantidad?m.cantidad+' unidad':'',m.momento,m.frecuencia].filter(Boolean).join(' · ')}</div>
-      <div class="med-detalle">${[m.medico?'Dr. '+m.medico:'',m.desde?'desde '+fmt(m.desde):'',m.hasta?'hasta '+fmt(m.hasta):''].filter(Boolean).join(' · ')}</div>
-      ${m.notas?`<div style="font-size:10px;color:#2a3a5a;margin-top:2px">${m.notas}</div>`:''}
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <span class="badge ${m.activo?'badge-activo':'badge-suspendido'}">${m.activo?'ACTIVO':'SUSPENDIDO'}</span>
+        <button class="btn btn-ghost" style="font-size:9px;padding:3px 8px" onclick="explicarMed(${m.id},'${m.nombre.replace(/'/g,"\\'")}','${(m.dosis||'').replace(/'/g,"\\'")}')">¿Para qué sirve?</button>
+        <button class="btn btn-ghost" style="font-size:9px;padding:3px 8px" onclick="abrirModalMed(${m.id})">✎</button>
+        <button class="btn-danger" onclick="eliminarMed(${m.id})">×</button>
+      </div>
     </div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <span class="badge ${m.activo?'badge-activo':'badge-suspendido'}">${m.activo?'ACTIVO':'SUSPENDIDO'}</span>
-      <button class="btn btn-ghost" style="font-size:9px;padding:3px 8px" onclick="abrirModalMed(${m.id})">✎</button>
-      <button class="btn-danger" onclick="eliminarMed(${m.id})">×</button>
-    </div>
+    <div id="medInfo_${m.id}" style="display:none"></div>
   </div>`;
   document.getElementById('medsActivos').innerHTML=activos.length?activos.map(renderMed).join(''):'<div class="empty" style="padding:20px">Sin medicamentos activos</div>';
   document.getElementById('medsSuspendidos').innerHTML=suspendidos.length?suspendidos.map(renderMed).join(''):'<div style="color:#1e2a4a;font-size:11px;padding:8px 0">—</div>';
+}
+async function explicarMed(id, nombre, dosis){
+  const box = document.getElementById('medInfo_'+id);
+  if(!box) return;
+  if(box.style.display !== 'none'){ box.style.display='none'; return; }
+  box.style.display='block';
+  box.innerHTML='<div class="med-info-loading">Consultando información...</div>';
+  try{
+    const resp = await fetch('https://jaalqnhekhcaqotgytzd.supabase.co/functions/v1/ai-med',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWxxbmhla2hjYXFvdGd5dHpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDI4OTcsImV4cCI6MjA5NjE3ODg5N30.5DdlfR7KF-hyeiDDFOFuK5x_vNskWMuE5ozoJcz04WQ'},
+      body:JSON.stringify({type:'explain',nombre,dosis})
+    });
+    const info = await resp.json();
+    if(info.error)throw new Error(info.error);
+    box.innerHTML=`
+      <div class="med-info-box">
+        <div class="info-label">QUÉ ES</div>
+        <div style="margin-bottom:8px">${info.descripcion}</div>
+        <div class="info-label">USO PRINCIPAL</div>
+        <div style="margin-bottom:8px">${info.uso}</div>
+        <div class="info-label">EFECTOS SECUNDARIOS COMUNES</div>
+        <div>${info.efectos}</div>
+      </div>`;
+  }catch(e){
+    box.innerHTML='<div class="med-info-loading">No se pudo obtener información.</div>';
+  }
+}
+async function revisarInteracciones(){
+  const activos = medicamentos.filter(m=>m.activo);
+  if(activos.length < 2){ alert('Necesitas al menos 2 medicamentos activos para revisar interacciones.'); return; }
+  const box = document.getElementById('interaccionesBox');
+  box.style.display='block';
+  box.innerHTML='<span style="color:#aab8cc">Analizando interacciones...</span>';
+  const lista = activos.map(m=>`${m.nombre}${m.dosis?' '+m.dosis:''}`);
+  try{
+    const resp = await fetch('https://jaalqnhekhcaqotgytzd.supabase.co/functions/v1/ai-med',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWxxbmhla2hjYXFvdGd5dHpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDI4OTcsImV4cCI6MjA5NjE3ODg5N30.5DdlfR7KF-hyeiDDFOFuK5x_vNskWMuE5ozoJcz04WQ'},
+      body:JSON.stringify({type:'interactions',medicamentos:lista})
+    });
+    const result = await resp.json();
+    if(result.error)throw new Error(result.error);
+    if(result.sin_interacciones || !result.interacciones.length){
+      box.innerHTML='<span style="color:#0f6e56">✓ No se detectaron interacciones relevantes entre tus medicamentos activos.</span>';
+    } else {
+      const colores = {leve:'#854f0b', moderada:'#a32d2d', grave:'#e24b4a'};
+      const fondos = {leve:'#faeeda', moderada:'#fcebeb', grave:'#fff0f0'};
+      box.innerHTML = '<div style="font-size:9px;color:#185fa5;letter-spacing:1.5px;font-weight:600;margin-bottom:10px">INTERACCIONES DETECTADAS</div>'
+        + result.interacciones.map(i=>`
+          <div style="margin-bottom:10px;padding:10px 12px;background:${fondos[i.severidad]||'#faeeda'};border-radius:8px;border:0.5px solid ${colores[i.severidad]||'#854f0b'}">
+            <div style="font-size:10px;font-weight:600;color:${colores[i.severidad]||'#854f0b'};margin-bottom:4px">${i.medicamentos} <span style="font-size:9px;letter-spacing:1px">[${i.severidad.toUpperCase()}]</span></div>
+            <div style="font-size:11px;color:#1a2a3a">${i.descripcion}</div>
+          </div>`).join('')
+        + '<div style="font-size:10px;color:#aab8cc;margin-top:10px;border-top:0.5px solid #e0ebf5;padding-top:10px">⚠ Esta información es orientativa y no reemplaza el criterio de tu médico o farmacéutico. Consulta siempre con un profesional de salud.</div>';
+    }
+  }catch(e){
+    box.innerHTML='<span style="color:#e24b4a">No se pudo analizar las interacciones.</span>';
+  }
 }
 function toggleHasta(){
   const activo=document.getElementById('mActivo').value;
