@@ -146,7 +146,7 @@ textarea { resize:vertical;min-height:70px; }
 
 <div id="emergencyScreen">
   <div class="emg-header">
-    <div><span class="emg-logo">VITAE</span><span class="emg-badge">⚡ EMERGENCIA</span></div>
+    <div><span class="emg-logo">VITAE</span><span class="emg-badge">EMERGENCIA</span></div>
     <div class="emg-nombre" id="emgNombre">—</div>
   </div>
   <div class="emg-grid">
@@ -612,8 +612,11 @@ let examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, contactosE
   const token = params.get('emergency');
   if(!token) return;
   // Mostrar pantalla de emergencia, ocultar todo lo demás
+  document.body.style.background = '#f0f4f9';
   document.getElementById('emergencyScreen').style.display = 'block';
   document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'none';
+  document.body.style.overflow = 'auto';
   try{
     const sbPub = supabase.createClient(
       'https://jaalqnhekhcaqotgytzd.supabase.co',
