@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vitae</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f9; color: #1a2a3a; min-height: 100vh; }
@@ -124,9 +125,58 @@ textarea { resize:vertical;min-height:70px; }
 
 /* Logout dropdown */
 #logoutDropdown button:hover { background:#f0f4f9 !important; }
+
+/* EMERGENCY */
+#emergencyScreen { display:none; min-height:100vh; background:#f0f4f9; padding:24px; }
+.emg-header { text-align:center; padding:20px 0 24px; }
+.emg-logo { font-size:22px; font-weight:600; color:#185fa5; letter-spacing:1px; }
+.emg-badge { display:inline-block; background:#e24b4a; color:#fff; font-size:9px; font-weight:600; letter-spacing:1.5px; padding:3px 10px; border-radius:100px; margin-left:8px; vertical-align:middle; }
+.emg-nombre { font-size:28px; font-weight:600; color:#1a2a3a; margin:12px 0 4px; }
+.emg-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:700px; margin:0 auto; }
+.emg-card { background:#fff; border:0.5px solid #d0dff0; border-radius:10px; padding:16px; }
+.emg-card.full { grid-column:1/-1; }
+.emg-card.highlight { border-color:#378add; background:#e6f1fb; }
+.emg-label { font-size:9px; color:#aab8cc; letter-spacing:1.5px; font-weight:600; margin-bottom:6px; }
+.emg-value { font-size:14px; color:#1a2a3a; font-weight:500; line-height:1.5; }
+.emg-value.big { font-size:26px; font-weight:700; color:#185fa5; }
+.emg-footer { text-align:center; font-size:10px; color:#aab8cc; margin-top:20px; max-width:700px; margin-left:auto; margin-right:auto; }
 </style>
 </head>
 <body>
+
+<div id="emergencyScreen">
+  <div class="emg-header">
+    <div><span class="emg-logo">VITAE</span><span class="emg-badge">⚡ EMERGENCIA</span></div>
+    <div class="emg-nombre" id="emgNombre">—</div>
+  </div>
+  <div class="emg-grid">
+    <div class="emg-card highlight">
+      <div class="emg-label">GRUPO SANGUÍNEO</div>
+      <div class="emg-value big" id="emgGrupo">—</div>
+    </div>
+    <div class="emg-card">
+      <div class="emg-label">ALTURA / PESO</div>
+      <div class="emg-value" id="emgMedidas">—</div>
+    </div>
+    <div class="emg-card full">
+      <div class="emg-label">ALERGIAS</div>
+      <div class="emg-value" id="emgAlergias">—</div>
+    </div>
+    <div class="emg-card full">
+      <div class="emg-label">CONDICIONES CRÓNICAS</div>
+      <div class="emg-value" id="emgAntecedentes">—</div>
+    </div>
+    <div class="emg-card full">
+      <div class="emg-label">MEDICAMENTOS ACTIVOS</div>
+      <div class="emg-value" id="emgMedicamentos">—</div>
+    </div>
+    <div class="emg-card full">
+      <div class="emg-label">CONTACTOS DE EMERGENCIA</div>
+      <div class="emg-value" id="emgContactos">—</div>
+    </div>
+  </div>
+  <div class="emg-footer">Esta información fue autorizada por el paciente para acceso de emergencia · VITAE</div>
+</div>
 
 <!-- AUTH -->
 <div class="auth-screen" id="authScreen">
@@ -274,6 +324,18 @@ textarea { resize:vertical;min-height:70px; }
         </div>
         <div class="ficha-card" id="contactosEmergenciaView">
           <h3>CONTACTOS DE EMERGENCIA</h3>
+        </div>
+        <div class="ficha-card" id="fichaQRSection" style="display:none;grid-column:1/-1">
+          <h3>MODO EMERGENCIA</h3>
+          <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-top:8px">
+            <canvas id="emgQRCanvas"></canvas>
+            <div style="flex:1;min-width:200px">
+              <div class="ficha-label">ENLACE DE EMERGENCIA</div>
+              <div id="emgUrl" style="font-size:11px;color:#378add;word-break:break-all;margin:6px 0 12px"></div>
+              <button class="btn btn-ghost" style="font-size:11px" onclick="navigator.clipboard.writeText(document.getElementById('emgUrl').textContent).then(()=>alert('Enlace copiado'))">Copiar enlace</button>
+              <div style="font-size:10px;color:#aab8cc;margin-top:10px;line-height:1.5">Cualquier persona con este QR o enlace puede ver tu información de emergencia sin iniciar sesión.</div>
+            </div>
+          </div>
         </div>
       </div>
       <div style="text-align:right;margin-top:-8px;margin-bottom:20px">
@@ -543,6 +605,41 @@ const sb = createClient(
 
 const CAT_COLORS = {Neurología:'#38bdf8',Imagenología:'#a78bfa',ORL:'#fb923c',Cardiología:'#f43f5e',Hematología:'#ef4444',Infectología:'#22c55e',Otro:'#64748b'};
 let examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, contactosEmergencia=[], filtCat='Todos', filtCli='Todas', activeTab='lista', navTab='examenes', tipoActual='lab', pdfFile=null, currentUser=null, editMedId=null, editExamenId=null, editVacId=null, editCirId=null;
+
+// ── MODO EMERGENCIA ────────────────────────────────────────────────────
+(async()=>{
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('emergency');
+  if(!token) return;
+  // Mostrar pantalla de emergencia, ocultar todo lo demás
+  document.getElementById('emergencyScreen').style.display = 'block';
+  document.getElementById('authScreen').style.display = 'none';
+  try{
+    const sbPub = supabase.createClient(
+      'https://jaalqnhekhcaqotgytzd.supabase.co',
+      'sb_publishable_pDsjtht8LaPnPYfylLD9Vw_H7vbYdDA'
+    );
+    const {data:p} = await sbPub.from('perfil').select('*').eq('emergency_token',token).maybeSingle();
+    if(!p){ document.getElementById('emgNombre').textContent='Token no válido'; return; }
+    document.getElementById('emgNombre').textContent = p.nombre || 'Paciente';
+    document.getElementById('emgGrupo').textContent = p.grupo_sanguineo || '—';
+    const medidas = [p.altura_cm?p.altura_cm+'cm':null, p.peso_kg?p.peso_kg+'kg':null].filter(Boolean).join(' · ');
+    document.getElementById('emgMedidas').textContent = medidas || '—';
+    document.getElementById('emgAlergias').textContent = p.alergias || 'Sin alergias registradas';
+    document.getElementById('emgAntecedentes').textContent = p.antecedentes || 'Sin condiciones registradas';
+    const {data:meds} = await sbPub.from('medicamentos').select('*').eq('user_id',p.user_id).eq('activo',true);
+    document.getElementById('emgMedicamentos').innerHTML = meds?.length
+      ? meds.map(m=>`<div style="margin-bottom:6px">· ${m.nombre}${m.dosis?' — '+m.dosis:''}${m.presentacion?' ('+m.presentacion+')':''}</div>`).join('')
+      : 'Sin medicamentos activos';
+    const {data:cts} = await sbPub.from('contactos_emergencia').select('*').eq('user_id',p.user_id).order('orden',{ascending:true});
+    document.getElementById('emgContactos').innerHTML = cts?.length
+      ? cts.map(c=>`<div style="margin-bottom:8px"><strong>${c.nombre}</strong>${c.relacion?' · '+c.relacion:''}<br><span style="color:#378add">${c.telefono||''}</span></div>`).join('')
+      : 'Sin contactos registrados';
+  }catch(e){
+    document.getElementById('emgNombre').textContent='Error al cargar datos';
+    console.error(e);
+  }
+})();
 
 // ── UTILS ──────────────────────────────────────────────────────────────
 function toggleEye(inputId, btnId) {
@@ -846,6 +943,7 @@ async function guardarFicha(){
     altura_cm:document.getElementById('pfAltura').value?parseInt(document.getElementById('pfAltura').value):null,
     peso_kg:document.getElementById('pfPeso').value?parseFloat(document.getElementById('pfPeso').value):null,
     peso_fecha:document.getElementById('pfPeso').value?new Date().toISOString().split('T')[0]:null,
+    emergency_token: perfil.emergency_token || crypto.randomUUID(),
   };
   try{
     const{data,error}=await sb.from('perfil').upsert(datos,{onConflict:'user_id'}).select();
@@ -895,6 +993,20 @@ function renderFicha(){
           <div class="ficha-value">${[c.nombre,c.telefono,c.email].filter(Boolean).join(' · ')||'—'}</div>
         </div>`).join('');
     ceEl.innerHTML='<h3>CONTACTOS DE EMERGENCIA</h3>'+body;
+  }
+  // QR emergencia
+  const token = perfil.emergency_token;
+  const qrSection = document.getElementById('fichaQRSection');
+  if(qrSection){
+    if(token){
+      const url = window.location.origin + '?emergency=' + token;
+      qrSection.style.display = 'block';
+      document.getElementById('emgUrl').textContent = url;
+      const canvas = document.getElementById('emgQRCanvas');
+      QRCode.toCanvas(canvas, url, {width:140, margin:1}, ()=>{});
+    } else {
+      qrSection.style.display = 'none';
+    }
   }
 }
 function abrirModalFicha(){
