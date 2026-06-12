@@ -604,7 +604,7 @@ const sb = createClient(
 );
 
 const CAT_COLORS = {Neurología:'#38bdf8',Imagenología:'#a78bfa',ORL:'#fb923c',Cardiología:'#f43f5e',Hematología:'#ef4444',Infectología:'#22c55e',Otro:'#64748b'};
-let examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, contactosEmergencia=[], filtCat='Todos', filtCli='Todas', activeTab='lista', navTab='examenes', tipoActual='lab', pdfFile=null, currentUser=null, editMedId=null, editExamenId=null, editVacId=null, editCirId=null;
+let isEmergencyMode=false, examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, contactosEmergencia=[], filtCat='Todos', filtCli='Todas', activeTab='lista', navTab='examenes', tipoActual='lab', pdfFile=null, currentUser=null, editMedId=null, editExamenId=null, editVacId=null, editCirId=null;
 
 // ── MODO EMERGENCIA ────────────────────────────────────────────────────
 (async()=>{
@@ -612,6 +612,7 @@ let examenes=[], medicamentos=[], vacunas=[], cirugias=[], perfil={}, contactosE
   const token = params.get('emergency');
   if(!token) return;
   // Mostrar pantalla de emergencia, ocultar todo lo demás
+  isEmergencyMode = true;
   document.body.style.background = '#f0f4f9';
   document.getElementById('emergencyScreen').style.display = 'block';
   document.getElementById('authScreen').style.display = 'none';
@@ -823,6 +824,7 @@ async function logout(global=false){
 }
 
 function mostrarApp(){
+  if(isEmergencyMode) return;
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
   document.getElementById('userEmail').textContent=currentUser.email;
